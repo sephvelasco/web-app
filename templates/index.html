@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fatigue Crack Detection Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header>
+    Deep Learning–Based Fatigue Crack Detection Dashboard
+  </header>
+
+  <div class="container">
+    <div id="infoPanel">
+      <h3>Bogie Information</h3>
+      <p><b>ID:</b> <span id="bogieId">Loading...</span></p>
+      <p><b>Status:</b> <span id="status" class="status">Loading...</span></p>
+      <p><b>Last Update:</b> <span id="timestamp">--</span></p>
+
+      <h3>Detected Cracks</h3>
+      <ul id="detectionsList"></ul>
+
+      <h3>Recommendation</h3>
+      <p id="recommendation">--</p>
+    </div>
+
+    <canvas id="viewer"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+</body>
+</html>
