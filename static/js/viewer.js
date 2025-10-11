@@ -1,88 +1,81 @@
-/* =============================
-FATIGUE CRACK DETECTION DASHBOARD - VIEWER SCRIPT
-============================= */
+// Import Three.js and OrbitControls (loaded via import map in index.html)
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // --- SCENE SETUP ---
 const viewerCanvas = document.getElementById('viewer');
+
+// Create a smaller 3D viewport that adjusts dynamically with the window
+const renderer = new THREE.WebGLRenderer({ canvas: viewerCanvas, antialias: true });
+const resizeRenderer = () => {
+  const containerWidth = window.innerWidth * 0.7;  // smaller width
+  const containerHeight = window.innerHeight * 0.8; // smaller height
+  renderer.setSize(containerWidth, containerHeight);
+};
+resizeRenderer();
+
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-60,
-viewerCanvas.clientWidth / viewerCanvas.clientHeight,
-0.1,
-1000
-);
-const renderer = new THREE.WebGLRenderer({
-canvas: viewerCanvas,
-antialias: true
-});
-renderer.setSize(viewerCanvas.clientWidth, viewerCanvas.clientHeight);
-renderer.setClearColor(0x202020);
+scene.background = new THREE.Color(0xf0f0f0);
+
+const camera = new THREE.PerspectiveCamera(60, (window.innerWidth * 0.7) / (window.innerHeight * 0.8), 0.1, 1000);
+camera.position.set(2, 2, 6);
 
 // --- LIGHTING ---
-const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-dirLight.position.set(5, 10, 7.5);
-scene.add(dirLight);
-scene.add(new THREE.AmbientLight(0x505050));
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+directionalLight.position.set(5, 10, 7.5);
+scene.add(directionalLight);
 
-// --- LOAD 3D MODEL ---
-const loader = new THREE.GLTFLoader();
-loader.load('/static/models/bogie.glb', (gltf) => {
-const model = gltf.scene;
-model.scale.set(1, 1, 1);
-scene.add(model);
-camera.position.set(0, 1, 5);
-animate();
-});
+// --- ORBIT CONTROLS ---
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.target.set(0, 1, 0);
 
-// --- RENDER LOOP ---
+// --- LOAD MODEL ---
+const loader = new GLTFLoader();
+loader.load(
+  '/static/models/text_3d.glb',   // 👈 make sure this file exists!
+  (gltf) => {
+    const model = gltf.scene;
+    model.scale.set(2, 2, 2);
+    model.position.set(0, 0, 0);
+    scene.add(model);
+
+    // Fit camera to model after load
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = camera.fov * (Math.PI / 180);
+    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+    cameraZ *= 1.5; // padding
+    camera.position.z = cameraZ;
+    camera.lookAt(center);
+    controls.target.copy(center);
+    controls.update();
+  },
+  undefined,
+  (error) => {
+    console.error('Error loading model:', error);
+  }
+);
+
+// --- ANIMATION LOOP ---
 function animate() {
-requestAnimationFrame(animate);
-renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
 }
+animate();
 
-// --- ADD MARKER FUNCTION ---
-function addMarker(x, y, z, color = 0xff0000) {
-const geometry = new THREE.SphereGeometry(0.05, 16, 16);
-const material = new THREE.MeshBasicMaterial({ color });
-const sphere = new THREE.Mesh(geometry, material);
-sphere.position.set(x, y, z);
-scene.add(sphere);
-}
-
-// --- FETCH AND DISPLAY DETECTION DATA ---
-async function fetchData() {
-const res = await fetch('/data/latest');
-const data = await res.json();
-
-document.getElementById('bogieId').textContent = data.bogie_id;
-document.getElementById('timestamp').textContent = data.timestamp;
-document.getElementById('status').textContent = data.status;
-document.getElementById('status').className = data.detections.length
-? "status alert"
-: "status ok";
-document.getElementById('recommendation').textContent = data.recommendation;
-
-const list = document.getElementById('detectionsList');
-list.innerHTML = '';
-
-// Remove old markers before adding new ones
-scene.children = scene.children.filter(obj => obj.type !== 'Mesh' || obj.geometry.type !== 'SphereGeometry');
-
-data.detections.forEach(det => {
-const li = document.createElement('li');
-li.textContent = `${det.type} (${(det.confidence * 100).toFixed(1)}%)`;
-list.appendChild(li);
-addMarker(...det.location);
-});
-}
-
-// --- REFRESH DATA REGULARLY ---
-fetchData();
-setInterval(fetchData, 5000); // refresh every 5 seconds
-
-// --- HANDLE WINDOW RESIZE ---
+// --- RESPONSIVE RESIZING ---
 window.addEventListener('resize', () => {
-camera.aspect = viewerCanvas.clientWidth / viewerCanvas.clientHeight;
-camera.updateProjectionMatrix();
-renderer.setSize(viewerCanvas.clientWidth, viewerCanvas.clientHeight);
+  const containerWidth = window.innerWidth * 0.7;
+  const containerHeight = window.innerHeight * 0.8;
+  camera.aspect = containerWidth / containerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(containerWidth, containerHeight);
 });
