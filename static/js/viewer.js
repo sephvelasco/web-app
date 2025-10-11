@@ -18,8 +18,10 @@ resizeRenderer();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf0f0f0);
 
-const camera = new THREE.PerspectiveCamera(60, (window.innerWidth * 0.7) / (window.innerHeight * 0.8), 0.1, 1000);
-camera.position.set(2, 2, 6);
+// --- CAMERA SETUP (fix clipping and distance) ---
+const aspect = (window.innerWidth * 0.7) / (window.innerHeight * 0.8);
+const camera = new THREE.PerspectiveCamera(60, aspect, 1, 8000); // larger far plane
+camera.position.set(0, 200, 400); // start farther away
 
 // --- LIGHTING ---
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -33,31 +35,37 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.target.set(0, 1, 0);
+controls.minDistance = 5;
+controls.maxDistance = 5000;
 
 // --- LOAD MODEL ---
 const loader = new GLTFLoader();
 loader.load(
-  '/static/models/text_3d.glb',   // 👈 make sure this file exists!
+  '/static/models/sample_bogie.glb', // your model path
   (gltf) => {
     const model = gltf.scene;
-    model.scale.set(2, 2, 2);
+    model.scale.set(0.5, 0.5, 0.5);
     model.position.set(0, 0, 0);
     scene.add(model);
 
-    // Fit camera to model after load
+    // --- AUTO-FIT CAMERA TO MODEL ---
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
+
     const fov = camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-    cameraZ *= 1.5; // padding
-    camera.position.z = cameraZ;
+    cameraZ *= 2.5; // add padding
+
+    camera.position.set(center.x, center.y + maxDim / 2, cameraZ);
     camera.lookAt(center);
     controls.target.copy(center);
     controls.update();
   },
-  undefined,
+  (xhr) => {
+    console.log(`Model ${(xhr.loaded / xhr.total * 100).toFixed(2)}% loaded`);
+  },
   (error) => {
     console.error('Error loading model:', error);
   }
