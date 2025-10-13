@@ -1,18 +1,49 @@
-from flask import Flask, render_template, jsonify
-import os, json
-from model.inference import get_latest_detections
+from flask import Flask, render_template, request, jsonify
+from werkzeug.utils import secure_filename
+import os
+from detector import CrackDetector
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+app = Flask(__name__, static_url_path='/static')
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Initialize YOLOv8 detector
+detector = CrackDetector('model/best.pt')
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/data/latest')
-def latest_data():
-    # You can later replace this with live inference results
-    detections = get_latest_detections()
-    return jsonify(detections)
+@app.route('/upload', methods=['POST'])
+def upload_image():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+
+    # Run detection
+    detections = detector.predict(filepath)
+
+    return jsonify({
+        'image_url': f'/static/uploads/{filename}',
+        'detections': detections
+    })
+
+@app.route('/history')
+def history():
+    uploads_dir = os.path.join(app.static_folder, 'uploads')
+    images = [
+        {'filename': f, 'path': f'/static/uploads/{f}'}
+        for f in os.listdir(uploads_dir)
+        if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+    ]
+    return jsonify(images)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True, host='0.0.0.0')
