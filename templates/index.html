@@ -4,27 +4,66 @@
   <meta charset="UTF-8">
   <title>Fatigue Crack Detection Dashboard</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
+      }
+    }
+  </script>
 </head>
+
 <body>
-  <header>
-    Deep Learning–Based Fatigue Crack Detection Dashboard
-  </header>
+  <div class="sidebar" id="sidebar">
+    <img src="{{ url_for('static', filename='images/lrmc_logo.png') }}" class="logo" alt="LRMC Logo">
+    <nav>
+      <ul>
+        <li class="active" id="dashboardTab">Dashboard</li>
+        <li id="historyTab">History</li>
+        <li onclick="window.open('https://lrmc.ph/contact-us/', '_blank')">Contacts</li>
+      </ul>
+    </nav>
+  </div>
 
-  <div class="container">
-    <div id="infoPanel">
-      <h3>Bogie Information</h3>
-      <p><b>ID:</b> <span id="bogieId">Loading...</span></p>
-      <p><b>Status:</b> <span id="status" class="status">Loading...</span></p>
-      <p><b>Last Update:</b> <span id="timestamp">--</span></p>
-
-      <h3>Detected Cracks</h3>
-      <ul id="detectionsList"></ul>
-
-      <h3>Recommendation</h3>
-      <p id="recommendation">--</p>
+  <div class="main-content" id="mainContent">
+    <!-- Tabs -->
+    <div class="top-tabs">
+      <div class="tab-btn active" id="imageTab"><b>Image</b>
+        <input type="file" id="imageInput" accept="image/*" hidden>
+        <button id="uploadBtn">Upload</button>
+      </div>
+      <div class="tab-btn" id="modelTab"><b>3D Model</b></div>
     </div>
 
-    <canvas id="viewer"></canvas>
+    <!-- Viewer Area -->
+    <div class="viewer-area" id="viewerArea">
+      <div id="imageContainer" class="drop-zone">
+        <p class="drop-text">Drag an image here or click Upload</p>
+        <img id="uploadedImage" src="#" alt="Uploaded" />
+      </div>
+      <canvas id="viewer"></canvas>
+    </div>
+
+    <!-- Bottom Info -->
+    <div class="info-section">
+      <div class="info-box">
+        <h3>Bogie Information</h3>
+        <p><b>ID:</b> <span id="bogieId">--</span></p>
+        <p><b>Status:</b> <span id="status">--</span></p>
+        <p><b>Time:</b> <span id="timestamp">--</span></p>
+      </div>
+
+      <div class="info-box scrollable">
+        <h3>Detected Cracks</h3>
+        <ul id="detectionsList"></ul>
+      </div>
+
+      <div class="info-box">
+        <h3>Recommendation</h3>
+        <p id="recommendation">--</p>
+      </div>
+    </div>
   </div>
 
   <script type="importmap">
@@ -35,7 +74,98 @@
       }
     }
   </script>
-
   <script type="module" src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+
+  <script>
+  // -------- Tabs & Upload Logic --------
+  const imageTab = document.getElementById('imageTab');
+  const modelTab = document.getElementById('modelTab');
+  const imageContainer = document.getElementById('imageContainer');
+  const viewerCanvas = document.getElementById('viewer');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const imageInput = document.getElementById('imageInput');
+  const dashboardTab = document.getElementById('dashboardTab');
+  const historyTab = document.getElementById('historyTab');
+  const mainContent = document.getElementById('mainContent');
+
+  let paused = true;  // start paused until 3D tab is clicked
+  viewerCanvas.style.display = 'none';
+  imageContainer.style.display = 'flex';
+
+  window.addEventListener('pause3DRender', e => paused = e.detail);
+
+  imageTab.addEventListener('click', () => {
+    imageTab.classList.add('active');
+    modelTab.classList.remove('active');
+    imageContainer.style.display = 'flex';
+    viewerCanvas.style.display = 'none';
+    window.dispatchEvent(new CustomEvent('pause3DRender', { detail: true }));
+  });
+
+  modelTab.addEventListener('click', () => {
+    modelTab.classList.add('active');
+    imageTab.classList.remove('active');
+    imageContainer.style.display = 'none';
+    viewerCanvas.style.display = 'block';
+    window.dispatchEvent(new CustomEvent('pause3DRender', { detail: false }));
+  });
+
+  uploadBtn.addEventListener('click', () => imageInput.click());
+  imageInput.addEventListener('change', e => uploadFile(e.target.files[0]));
+  imageContainer.addEventListener('dragover', e => e.preventDefault());
+  imageContainer.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadFile(e.dataTransfer.files[0]);
+  });
+
+  async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    document.querySelector('.drop-text').style.display = 'none';
+    const img = document.getElementById('uploadedImage');
+    img.src = data.image_url;
+    img.style.display = 'block';
+
+    const list = document.getElementById('detectionsList');
+    list.innerHTML = '';
+    data.detections.forEach(det => {
+      const li = document.createElement('li');
+      li.textContent = `${det.class} (${(det.confidence * 100).toFixed(1)}%)`;
+      list.appendChild(li);
+    });
+  }
+
+  // -------- History Tab --------
+  historyTab.addEventListener('click', async () => {
+    dashboardTab.classList.remove('active');
+    historyTab.classList.add('active');
+    const res = await fetch('/history');
+    const images = await res.json();
+    mainContent.innerHTML = '<h2>Upload History</h2><div class="history-grid"></div>';
+    const grid = document.querySelector('.history-grid');
+    images.forEach(img => {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      div.innerHTML = `<img src="${img.path}"><p>${img.filename}</p>`;
+      grid.appendChild(div);
+    });
+  });
+
+  // -------- Dashboard Tab (restore main layout) --------
+  dashboardTab.addEventListener('click', () => {
+    location.reload(); // simple restore (could also cache DOM)
+  });
+  </script>
+
+    <!-- Image Preview Overlay -->
+  <div id="imagePreviewOverlay">
+    <div class="preview-content">
+      <img id="previewImage" src="#" alt="Preview">
+      <p id="previewFilename"></p>
+      <span id="closePreview">&times;</span>
+    </div>
+  </div>
 </body>
 </html>

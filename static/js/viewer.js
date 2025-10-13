@@ -72,10 +72,17 @@ loader.load(
 );
 
 // --- ANIMATION LOOP ---
+let paused = false;
+window.addEventListener('pause3DRender', (e) => {
+  paused = e.detail;
+});
+
 function animate() {
   requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
+  if (!paused) {
+    controls.update();
+    renderer.render(scene, camera);
+  }
 }
 animate();
 
@@ -86,4 +93,31 @@ window.addEventListener('resize', () => {
   camera.aspect = containerWidth / containerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(containerWidth, containerHeight);
+});
+
+// ---- IMAGE PREVIEW (History Enlarged View) ----
+document.addEventListener('dblclick', function(e) {
+  if (e.target.closest('.history-item img')) {
+    const img = e.target.closest('.history-item img');
+    const src = img.src;
+    const filename = img.nextElementSibling.textContent;
+
+    const overlay = document.getElementById('imagePreviewOverlay');
+    const previewImg = document.getElementById('previewImage');
+    const previewName = document.getElementById('previewFilename');
+
+    previewImg.src = src;
+    previewName.textContent = filename;
+    overlay.style.display = 'flex';
+  }
+});
+
+document.getElementById('closePreview').addEventListener('click', () => {
+  document.getElementById('imagePreviewOverlay').style.display = 'none';
+});
+
+document.getElementById('imagePreviewOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'imagePreviewOverlay') {
+    e.currentTarget.style.display = 'none';
+  }
 });
