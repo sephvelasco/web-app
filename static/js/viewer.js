@@ -1,16 +1,16 @@
-// Import Three.js and OrbitControls (loaded via import map in index.html)
+// Import Three.js and OrbitControls
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// --- SCENE SETUP ---
+// SCENE SETUP
 const viewerCanvas = document.getElementById('viewer');
 
 // Create a smaller 3D viewport that adjusts dynamically with the window
 const renderer = new THREE.WebGLRenderer({ canvas: viewerCanvas, antialias: true });
 const resizeRenderer = () => {
-  const containerWidth = window.innerWidth * 0.7;  // smaller width
-  const containerHeight = window.innerHeight * 0.8; // smaller height
+  const containerWidth = window.innerWidth * 0.7;
+  const containerHeight = window.innerHeight * 0.8;
   renderer.setSize(containerWidth, containerHeight);
 };
 resizeRenderer();
@@ -18,19 +18,19 @@ resizeRenderer();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf0f0f0);
 
-// --- CAMERA SETUP (fix clipping and distance) ---
+// CAMERA SETUP (fix clipping and distance)
 const aspect = (window.innerWidth * 0.7) / (window.innerHeight * 0.8);
-const camera = new THREE.PerspectiveCamera(60, aspect, 1, 8000); // larger far plane
-camera.position.set(0, 200, 400); // start farther away
+const camera = new THREE.PerspectiveCamera(60, aspect, 1, 8000);
+camera.position.set(0, 200, 400);
 
-// --- LIGHTING ---
+// LIGHTING
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
 directionalLight.position.set(5, 10, 7.5);
 scene.add(directionalLight);
 
-// --- ORBIT CONTROLS ---
+// ORBIT CONTROLS
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
@@ -38,17 +38,17 @@ controls.target.set(0, 1, 0);
 controls.minDistance = 5;
 controls.maxDistance = 5000;
 
-// --- LOAD MODEL ---
+// LOAD MODEL
 const loader = new GLTFLoader();
 loader.load(
-  '/static/models/sample_bogie.glb', // your model path
+  '/static/models/sample_bogie.glb',
   (gltf) => {
     const model = gltf.scene;
     model.scale.set(0.5, 0.5, 0.5);
     model.position.set(0, 0, 0);
     scene.add(model);
 
-    // --- AUTO-FIT CAMERA TO MODEL ---
+    // AUTO-FIT CAMERA TO MODEL
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -71,7 +71,7 @@ loader.load(
   }
 );
 
-// --- ANIMATION LOOP ---
+// ANIMATION LOOP
 let paused = false;
 window.addEventListener('pause3DRender', (e) => {
   paused = e.detail;
@@ -86,7 +86,7 @@ function animate() {
 }
 animate();
 
-// --- RESPONSIVE RESIZING ---
+// RESPONSIVE RESIZING
 window.addEventListener('resize', () => {
   const containerWidth = window.innerWidth * 0.7;
   const containerHeight = window.innerHeight * 0.8;
@@ -95,7 +95,7 @@ window.addEventListener('resize', () => {
   renderer.setSize(containerWidth, containerHeight);
 });
 
-// ---- IMAGE PREVIEW (History Enlarged View) ----
+// IMAGE PREVIEW
 document.addEventListener('dblclick', function(e) {
   if (e.target.closest('.history-item img')) {
     const img = e.target.closest('.history-item img');
