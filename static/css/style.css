@@ -6,7 +6,7 @@ body {
   overflow: hidden;
 }
 
-/* ---------- SIDEBAR ---------- */
+/* SIDEBAR */
 .sidebar {
   background-color: #214390;
   color: white;
@@ -19,7 +19,7 @@ body {
 }
 
 .sidebar .logo {
-  width: 150px; /* bigger logo */
+  width: 150px;
   height: auto;
   margin-bottom: 25px;
 }
@@ -42,7 +42,7 @@ body {
   background-color: #16336e;
 }
 
-/* ---------- MAIN CONTENT ---------- */
+/* MAIN CONTENT */
 .main-content {
   flex-grow: 1;
   display: flex;
@@ -52,11 +52,11 @@ body {
   box-sizing: border-box;
 }
 
-/* ---------- TABS ---------- */
+/* TABS */
 .top-tabs {
   display: flex;
   justify-content: space-around;
-  border: 3px solid #214390; /* thicker border */
+  border: 3px solid #214390;
   border-radius: 6px;
   margin-bottom: 10px;
   height: 55px;
@@ -73,7 +73,7 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
-  border-right: 3px solid #214390; /* divider between tabs */
+  border-right: 3px solid #214390;
 }
 
 .tab-btn:last-child {
@@ -90,10 +90,10 @@ body {
   font-size: 12px;
 }
 
-/* ---------- VIEWER AREA ---------- */
+/* VIEWER AREA */
 .viewer-area {
   flex: 1;
-  border: 2px solid #214390; /* thinner than tab/info */
+  border: 2px solid #214390;
   border-radius: 6px;
   display: flex;
   justify-content: center;
@@ -135,11 +135,11 @@ body {
   height: 100%;
 }
 
-/* ---------- INFO SECTION ---------- */
+/* INFO SECTION */
 .info-section {
   display: flex;
   margin-top: 10px;
-  border: 3px solid #214390; /* thicker border */
+  border: 3px solid #214390;
   height: 180px;
   box-sizing: border-box;
 }
@@ -157,10 +157,9 @@ body {
   border-right: none;
 }
 
-/* Header cell (like table header) */
 .info-box h3 {
   background-color: #f5f7fa;
-  font-size: 17px; /* slightly larger */
+  font-size: 17px;
   font-weight: bold;
   color: #000;
   margin: 0;
@@ -168,7 +167,6 @@ body {
   border-bottom: 2px solid #214390;
 }
 
-/* Content inside info boxes */
 .info-box p,
 .info-box ul {
   margin: 6px 10px;
@@ -180,7 +178,7 @@ body {
   flex-grow: 1;
 }
 
-/* ---------- HISTORY GRID ---------- */
+/* HISTORY GRID */
 .history-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -205,13 +203,12 @@ body {
   margin: 3px 0 0 0;
 }
 
-/* Optional: small hover zoom for history images */
 .history-item img:hover {
   transform: scale(1.03);
   transition: transform 0.2s ease;
 }
 
-/* ---------- IMAGE PREVIEW OVERLAY ---------- */
+/* IMAGE PREVIEW OVERLAY */
 #imagePreviewOverlay {
   position: fixed;
   top: 0;
