@@ -77,7 +77,7 @@
   <script type="module" src="{{ url_for('static', filename='js/viewer.js') }}"></script>
 
   <script>
-  // -------- Tabs & Upload Logic --------
+  // Tabs & Upload Logic
   const imageTab = document.getElementById('imageTab');
   const modelTab = document.getElementById('modelTab');
   const imageContainer = document.getElementById('imageContainer');
@@ -88,7 +88,7 @@
   const historyTab = document.getElementById('historyTab');
   const mainContent = document.getElementById('mainContent');
 
-  let paused = true;  // start paused until 3D tab is clicked
+  let paused = true;
   viewerCanvas.style.display = 'none';
   imageContainer.style.display = 'flex';
 
@@ -137,7 +137,7 @@
     });
   }
 
-  // -------- History Tab --------
+  // History Tab
   historyTab.addEventListener('click', async () => {
     dashboardTab.classList.remove('active');
     historyTab.classList.add('active');
@@ -153,7 +153,7 @@
     });
   });
 
-  // -------- Dashboard Tab (restore main layout) --------
+  // Dashboard Tab (restore main layout)
   dashboardTab.addEventListener('click', () => {
     location.reload(); // simple restore (could also cache DOM)
   });
