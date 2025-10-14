@@ -9,3 +9,8 @@ executed October 11
 Second Pull Request Merge
 executed October 13
   - Initial Draft for Web Application
+
+Added Dependencies & Shell Script 
+created Obtober 14
+  - Installs Dependencies
+  - Auto-runs app.py
