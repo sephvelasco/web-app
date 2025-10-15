@@ -7,6 +7,7 @@ Jinja2
 ultralytics
 torch
 torchvision
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 # Image Processing
 opencv-python
@@ -32,4 +33,5 @@ gunicorn
 #    python app.py
 
 # For production deployment, consider using Gunicorn:
+
 #    gunicorn -w 4 -b
