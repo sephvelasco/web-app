@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo "Setup for Web Application"
+echo "-----------------------------------"
 
 # Check for Python3
 if ! command -v python3 &> /dev/null; then
@@ -10,24 +11,28 @@ fi
 
 # Create Virtual Environment
 echo "Creating Python Virtual Environment"
+echo "-----------------------------------"
 python3 -m venv venv
 
 # Activate Virtual Environment
 echo "Activating Virtual Environment"
+echo "-----------------------------------"
 source venv/bin/activate
 
 # Upgrade pip
 echo "Upgrading pip Package Manager"
+echo "-----------------------------------"
 python3 -m pip install --upgrade pip
 
 # Install Dependencies
 echo "Installing Dependencies"
+echo "-----------------------------------"
 python3 -m pip install -r requirements.txt
 
 # Run Flask App
 echo "Setup Complete"
-echo " "
+echo "-----------------------------------"
 echo "Running Flask"
-echo " "
-echo " Access Web App at: http://127.0.0.1:5000"
+echo "-----------------------------------"
+echo "Access Web App at: http://127.0.0.1:5000"
 python3 app.py
