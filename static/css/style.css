@@ -263,3 +263,35 @@ body {
 #closePreview:hover {
   background: rgba(0,0,0,0.5);
 }
+
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 15px;
+}
+
+.history-item {
+  background: white;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.history-item:hover {
+  transform: scale(1.03);
+}
+
+.history-item img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.history-item p {
+  margin: 4px 0;
+  font-size: 13px;
+}
