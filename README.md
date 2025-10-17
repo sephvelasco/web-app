@@ -1,5 +1,4 @@
 # **Web Application for Computer Engineering Project Design**
-## Description
 ### Project Title
   - Design of a Deep Learning-Based Fatigue Crack Detection System for Train Bogie Frames with 3D Defect Mapping
 
@@ -20,10 +19,10 @@
   6. Possible errors:
      - bash: ./setup_lin.sh: /bin/bash^M: bad interpreter: No such file or directory
      - bash: ./setup_lin.sh: cannot execute: required file not found
-         a. `sudo apt install dos2unix`
-         b. `dos2unix setup_lin.sh`
+           a. `sudo apt install dos2unix`
+           b. `dos2unix setup_lin.sh`
      - bash: ./setup_lin.sh: Permission denied
-         a. `sudo chmod +x setup_lin.sh`
+            a.  `sudo chmod +x setup_lin.sh`
 
 ## Logs
 ### Web App Template
@@ -39,6 +38,10 @@ executed October 13
   - Initial Draft for Web Application
 
 ### Added Dependencies & Shell Script 
-created Obtober 14
+created October 14
   - Installs Dependencies
   - Auto-runs app.py
+
+### Added Setup Directions
+added October 17
+  - Shell Script Directions
