@@ -5,8 +5,7 @@
 ## Setup
 | Setup for Linux (`setup.lin.sh`)| Setup for Windows (`setup_win.bat`)|
 |---------------------------------|------------------------------------|
-|  1. Download Repositor<br>  2. Extract Files<br>  3. Open Terminal<br>   4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_lin.sh`<br>|  1. Download Repository<br>  2. Extract Files<br> 3. Open Terminal<br>  4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_win.bat`|
-|  6. Possible errors:<br>     - bash: ./setup_lin.sh: /bin/bash^M: bad interpreter: No such file or directory<br>     - bash: ./setup_lin.sh: cannot execute: required file not found<br>         1. `sudo apt install dos2unix`<br>         2. `dos2unix setup_lin.sh`<br>     - bash: ./setup_lin.sh: Permission denied<br>         1. `sudo chmod +x setup_lin.sh`|
+|  1. Download Repositor<br>  2. Extract Files<br>  3. Open Terminal<br>   4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_lin.sh`<br>6. Possible errors:<br>     - bash: ./setup_lin.sh: /bin/bash^M: bad interpreter: No such file or directory<br>     - bash: ./setup_lin.sh: cannot execute: required file not found<br>         1. `sudo apt install dos2unix`<br>         2. `dos2unix setup_lin.sh`<br>     - bash: ./setup_lin.sh: Permission denied<br>         1. `sudo chmod +x setup_lin.sh`|  1. Download Repository<br>  2. Extract Files<br> 3. Open Terminal<br>  4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_win.bat`|
 
 ## Logs
 ### Web App Template
