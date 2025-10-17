@@ -3,6 +3,18 @@
   - Design of a Deep Learning-Based Fatigue Crack Detection System for Train Bogie Frames with 3D Defect Mapping
 
 ## Setup
+### Upload 3D Model
+  1. Download any 3D model (`.glb` format)
+  2. Move file to `/static/models` directory
+  3. Open `/static/js/viewer.js`
+  4. Change line 44 according to file name
+```
+  43 loader.load(
+  44   '/static/models/<filename>.glb',
+  45   (gltf) => {
+```
+
+### Setup for Different Operating Systems
 | Setup for Linux (`setup.lin.sh`)| Setup for Windows (`setup_win.bat`)|
 |---------------------------------|------------------------------------|
 |  1. Download Repository<br>  2. Extract Files<br>  3. Open Terminal<br>   4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_lin.sh`|  1. Download Repository<br>  2. Extract Files<br> 3. Open Terminal<br>  4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_win.bat`|
