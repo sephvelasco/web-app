@@ -15,13 +15,13 @@
 ```
 
 ### Setup for Different Operating Systems
-| Setup for Linux (`setup.lin.sh`)| Setup for Windows (`setup_win.bat`)|
+| Setup for Linux (`setup_lin.sh`)| Setup for Windows (`setup_win.bat`)|
 |---------------------------------|------------------------------------|
-|  1. Download Repository<br>  2. Extract Files<br>  3. Open Terminal<br>   4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_lin.sh`|  1. Download Repository<br>  2. Extract Files<br> 3. Open Terminal<br>  4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_win.bat`|
+|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to WebApp<br>5. Execute Shell Script `./setup_lin.sh`|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to WebApp<br>5. Execute Shell Script `./setup_win.bat`|
 
 |Possible Errors| Fixes |
 |---------------|-------|
-|`bad interpreter: No such file or directory`<br>`cannot execute: required file not found`|1. `sudo apt install dos2unix`<br>2. `dos2unix setup_lin.sh`|
+|`bad interpreter: No such file or directory`<br><br>`cannot execute: required file not found`|1. `sudo apt install dos2unix`<br>2. `dos2unix setup_lin.sh`|
 |`bash: ./setup_lin.sh: Permission denied`|`sudo chmod +x setup_lin.sh`|
 
 ## Links
