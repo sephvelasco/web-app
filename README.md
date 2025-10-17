@@ -34,6 +34,7 @@ created October 14
   - Installs Dependencies
   - Auto-runs app.py
 
-### Added Setup Directions
+### Added Setup Directions and SQLite Database
 added October 17
   - Shell Script Directions
+  - Implemented Local SQLite Database
