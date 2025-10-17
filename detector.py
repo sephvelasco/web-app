@@ -30,10 +30,11 @@ class CrackDetector:
                     class_id = int(box.cls[0])
                     confidence = float(box.conf[0])
                     detections.append({
-                        'class': class_names[class_id],
+                        'name': class_names[class_id],
                         'confidence': round(confidence, 2)
                     })
-            
+
+            print("DETECTIONS:", detections)
             return detections
 
         except Exception as e:

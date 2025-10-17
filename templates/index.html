@@ -132,26 +132,41 @@
     list.innerHTML = '';
     data.detections.forEach(det => {
       const li = document.createElement('li');
-      li.textContent = `${det.class} (${(det.confidence * 100).toFixed(1)}%)`;
+      li.textContent = `${det.class || det.type || det.name || 'unknown'} (${(det.confidence * 100).toFixed(1)}%)`;
       list.appendChild(li);
     });
   }
 
-  // History Tab
-  historyTab.addEventListener('click', async () => {
-    dashboardTab.classList.remove('active');
-    historyTab.classList.add('active');
-    const res = await fetch('/history');
-    const images = await res.json();
-    mainContent.innerHTML = '<h2>Upload History</h2><div class="history-grid"></div>';
-    const grid = document.querySelector('.history-grid');
-    images.forEach(img => {
-      const div = document.createElement('div');
-      div.className = 'history-item';
-      div.innerHTML = `<img src="${img.path}"><p>${img.filename}</p>`;
-      grid.appendChild(div);
-    });
+// History Tab (updated to show detections from database)
+historyTab.addEventListener('click', async () => {
+  dashboardTab.classList.remove('active');
+  historyTab.classList.add('active');
+
+  const res = await fetch('/history');
+  const images = await res.json();
+
+  mainContent.innerHTML = '<h2>Upload History</h2><div class="history-grid"></div>';
+  const grid = document.querySelector('.history-grid');
+
+  if (images.length === 0) {
+    grid.innerHTML = '<p>No uploaded images found.</p>';
+    return;
+  }
+
+  images.forEach(img => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <img src="${img.image_url}" alt="${img.filename}">
+      <p><b>${img.filename}</b></p>
+      <p><small>${img.timestamp}</small></p>
+      ${img.detections.map(det => `
+        <p>${det.crack_type} (${det.confidence}%)</p>
+      `).join('')}
+    `;
+    grid.appendChild(div);
   });
+});
 
   // Dashboard Tab (restore main layout)
   dashboardTab.addEventListener('click', () => {
