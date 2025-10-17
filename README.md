@@ -19,10 +19,10 @@
   6. Possible errors:
      - bash: ./setup_lin.sh: /bin/bash^M: bad interpreter: No such file or directory
      - bash: ./setup_lin.sh: cannot execute: required file not found
-           a. `sudo apt install dos2unix`
-           b. `dos2unix setup_lin.sh`
+         1. `sudo apt install dos2unix`
+         2. `dos2unix setup_lin.sh`
      - bash: ./setup_lin.sh: Permission denied
-            a.  `sudo chmod +x setup_lin.sh`
+         1. `sudo chmod +x setup_lin.sh`
 
 ## Logs
 ### Web App Template
