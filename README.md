@@ -7,9 +7,15 @@
 |---------------------------------|------------------------------------|
 |  1. Download Repositor<br>  2. Extract Files<br>  3. Open Terminal<br>   4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_lin.sh`|  1. Download Repository<br>  2. Extract Files<br> 3. Open Terminal<br>  4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_win.bat`|
 
-|Possible Errors|
-|---------------|
-|- bash: ./setup_lin.sh: /bin/bash^M: bad interpreter: No such file or directory<br>     - bash: ./setup_lin.sh: cannot execute: required file not found<br>         1. `sudo apt install dos2unix`<br>         2. `dos2unix setup_lin.sh`<br>     - bash: ./setup_lin.sh: Permission denied<br>         1. `sudo chmod +x setup_lin.sh`|
+|Possible Errors| Fixes |
+|---------------|-------|
+|- bash: ./setup_lin.sh: /bin/bash^M: bad interpreter: No such file or directory<br>- bash: ./setup_lin.sh: cannot execute: required file not found|1. `sudo apt install dos2unix`<br>2. `dos2unix setup_lin.sh`|
+|bash: ./setup_lin.sh: Permission denied|`sudo chmod +x setup_lin.sh`|
+
+## Links
+### Sample Train Bogie Frame 3D Model
+https://drive.google.com/drive/folders/1XeoyBypTwfNWYl4qd4Hxu3EB-nCV4RPv?usp=sharing 
+
 ## Logs
 ### Web App Template
 created October 7
