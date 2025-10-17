@@ -3,20 +3,10 @@
   - Design of a Deep Learning-Based Fatigue Crack Detection System for Train Bogie Frames with 3D Defect Mapping
 
 ## Setup
-| Setup for Linux (`setup.lin.sh`)                                                   | Setup for Windows (`setup_win.bat`)       |
-|------------------------------------------------------------------------------------|-------------------------------------------|
-  1. Download Repository                                                             | 1. Download Repository                   
-  2. Extract Files                                                                   | 2. Extract Files                         
-  3. Open Terminal                                                                   | 3. Open Terminal                         
-  4. Change Directory to WebApp                                                      | 4. Change Directory to WebApp            
-  5. Execute Shell Script `./setup_lin.sh`                                           | 5. Execute Shell Script `./setup_win.bat`
-  6. Possible errors:                                                                |                                          
-     - bash: ./setup_lin.sh: /bin/bash^M: bad interpreter: No such file or directory |                                          
-     - bash: ./setup_lin.sh: cannot execute: required file not found                 |                                          
-         1. `sudo apt install dos2unix`                                              |                                          
-         2. `dos2unix setup_lin.sh`                                                  |                                          
-     - bash: ./setup_lin.sh: Permission denied                                       |                                          
-         1. `sudo chmod +x setup_lin.sh`                                             |                                          
+| Setup for Linux (`setup.lin.sh`)| Setup for Windows (`setup_win.bat`)|
+|---------------------------------|------------------------------------|
+|  1. Download Repositor<br>  2. Extract Files<br>  3. Open Terminal<br>   4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_lin.sh`<br>|  1. Download Repository<br>  2. Extract Files<br> 3. Open Terminal<br>  4. Change Directory to WebApp<br>  5. Execute Shell Script `./setup_win.bat`|
+|  6. Possible errors:<br>     - bash: ./setup_lin.sh: /bin/bash^M: bad interpreter: No such file or directory<br>     - bash: ./setup_lin.sh: cannot execute: required file not found<br>         1. `sudo apt install dos2unix`<br>         2. `dos2unix setup_lin.sh`<br>     - bash: ./setup_lin.sh: Permission denied<br>         1. `sudo chmod +x setup_lin.sh`|
 
 ## Logs
 ### Web App Template
