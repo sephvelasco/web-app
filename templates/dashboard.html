@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block title %}Fatigue Crack Detection{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="top-tabs">
+    <div class="tab-btn active" id="imageTab">Image</div>
+    <div class="tab-btn" id="modelTab">3D Model</div>
+  </div>
+
+  <div class="viewer-area">
+    <div id="imageContainer" class="drop-zone">
+      <p>Drag an image here or click Upload</p>
+      <img id="uploadedImage" src="#" alt="Uploaded">
+    </div>
+    <canvas id="viewer"></canvas>
+  </div>
+
+  <div class="info-section">
+    <div class="info-box">
+      <h3>Bogie Information</h3>
+      <p><b>ID:</b> <span id="bogieId">--</span></p>
+      <p><b>Status:</b> <span id="status">--</span></p>
+      <p><b>Time:</b> <span id="timestamp">--</span></p>
+    </div>
+
+    <div class="info-box scrollable">
+      <h3>Detected Cracks</h3>
+      <ul id="detectionsList"></ul>
+    </div>
+
+    <div class="info-box">
+      <h3>Recommendation</h3>
+      <p id="recommendation">--</p>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+{% endblock %}

@@ -16,13 +16,18 @@
 
 <body>
   <div class="sidebar" id="sidebar">
-    <img src="{{ url_for('static', filename='images/lrmc_logo.png') }}" class="logo" alt="LRMC Logo">
-    <nav>
+    <button id="sidebarToggle" class="hamburger">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+    </button>
+     <img src="{{ url_for('static', filename='images/lrmc_vert.png') }}" class="logo" alt="LRMC Logo">
+     <nav>
       <ul>
-        <li class="active" id="dashboardTab">Dashboard</li>
-        <li id="historyTab">History</li>
-        <li onclick="window.open('https://lrmc.ph/contact-us/', '_blank')">Contacts</li>
-      </ul>
+       <li class="active" id="dashboardTab">Dashboard</li>
+       <li id="historyTab">History</li>
+          <li onclick="window.open('https://lrmc.ph/contact-us/', '_blank')">Contacts</li>
+     </ul>
     </nav>
   </div>
 
@@ -182,5 +187,40 @@ historyTab.addEventListener('click', async () => {
       <span id="closePreview">&times;</span>
     </div>
   </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+  const sidebar = document.getElementById("sidebar");
+  const toggleBtn = document.getElementById("sidebarToggle");
+  const main = document.querySelector(".main-content");
+
+  // Start collapsed
+  sidebar.classList.add("collapsed");
+  toggleBtn.classList.remove("open");
+  main.style.marginLeft = "55px";
+
+  toggleBtn.addEventListener("click", () => {
+    const isCollapsed = sidebar.classList.contains("collapsed");
+
+    if (isCollapsed) {
+      sidebar.classList.remove("collapsed");
+      sidebar.style.width = "220px";       // force visible width
+      main.style.marginLeft = "240px";     // push content right
+      toggleBtn.classList.add("open");
+      console.log("Sidebar expanded");
+    } else {
+      sidebar.classList.add("collapsed");
+      sidebar.style.width = "55px";        // shrink width
+      main.style.marginLeft = "55px";      // align content
+      toggleBtn.classList.remove("open");
+      console.log("Sidebar collapsed");
+    }
+
+    // Trigger resize for Three.js layout
+    window.dispatchEvent(new Event("resize"));
+  });
+});
+</script>
+
 </body>
 </html>
