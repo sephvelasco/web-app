@@ -1,7 +1,7 @@
-from flask_sqlalchemy import SQLAlchemy
+from . import db
 from datetime import datetime
-
-db = SQLAlchemy()
+from models import db
+# from models.detection import Detection
 
 class Detection(db.Model):
     __tablename__ = 'detections'

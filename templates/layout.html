@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Dashboard{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+  <div class="sidebar">
+    <img src="{{ url_for('static', filename='images/lrmc_logo.png') }}" class="logo" alt="LRMC Logo">
+    <nav>
+      <ul>
+        <li><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('main.history') }}">History</a></li>
+        <li><a href="https://lrmc.ph/contact-us/" target="_blank">Contacts</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    {% block content %}
+    <!-- Each page will fill this -->
+    {% endblock %}
+  </div>
+</body>
+</html>

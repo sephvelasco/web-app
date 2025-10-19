@@ -1,4 +1,5 @@
 from ultralytics import YOLO
+# from services.detector_service import CrackDetector
 
 class CrackDetector:
 

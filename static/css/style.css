@@ -8,38 +8,137 @@ body {
 
 /* SIDEBAR */
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;
+  height: 100vh;
   background-color: #214390;
   color: white;
-  width: 240px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 20px;
-  flex-shrink: 0;
+  transition: width 0.3s ease;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.sidebar.collapsed {
+  width: 55px;
+}
+
+.logo {
+  width: 70%;
+  display: block;
+  margin: 60px auto 20px;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .logo,
+.sidebar.collapsed nav {
+  display: none;
 }
 
 .sidebar .logo {
   width: 150px;
-  height: auto;
-  margin-bottom: 25px;
+  display: block;
+  margin: 60px auto 20px;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.sidebar nav {
+  transition: opacity 0.2s ease, transform 0.25s ease;
 }
 
 .sidebar nav ul {
   list-style: none;
   padding: 0;
-  width: 100%;
-  text-align: center;
+  margin-top: 40px;
 }
 
 .sidebar nav ul li {
-  padding: 15px 0;
+  padding: 12px 20px;
+  margin: 8px 10px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s;
+  transition: background 0.15s;
+  user-select: none;
+  width: calc(100% - 20px); /* make button wider */
+  box-sizing: border-box;
 }
 
 .sidebar nav ul li:hover {
-  background-color: #16336e;
+  background-color: rgba(255,255,255,0.2);
+}
+
+.sidebar nav ul li.active {
+  background-color: rgba(255,255,255,0.18);
+}
+
+/* Keep clickable area wide even when collapsed */
+.sidebar.collapsed nav ul li {
+  padding: 12px 8px;
+  margin: 6px 0;
+  text-align: center;
+  width: 100%;
+}
+
+/* ========== Hamburger Button ========== */
+.hamburger {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 20px;
+  width: 25px;
+  padding: 0;
+  z-index: 1100;
+  outline: none;
+}
+
+/* bars */
+.hamburger .bar {
+  height: 3px;
+  width: 100%;
+  background-color: #f5f5f5;
+  border-radius: 3px;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+/* When hamburger has .open → show X (expanded) */
+.hamburger.open .bar:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 6px);
+}
+.hamburger.open .bar:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.open .bar:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -7px);
+}
+
+/* Default (not open) — regular hamburger */
+.hamburger:not(.open) .bar {
+  transform: none;
+  opacity: 1;
+}
+
+/* ========== Content shift when collapsed ========== */
+.main-content {
+  margin-left: 240px;
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar.collapsed ~ .main-content,
+.sidebar.collapsed + .main-content { /* depending on DOM order */
+  margin-left: 55px;
+}
+
+/* Make sure collapsed sidebar doesn't show overflow text */
+.sidebar.collapsed nav ul li span,
+.sidebar.collapsed nav ul li a {
+  display: none;
 }
 
 /* MAIN CONTENT */
