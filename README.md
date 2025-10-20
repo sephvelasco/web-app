@@ -1,6 +1,5 @@
 # **Web Application for Computer Engineering Project Design**
-### Project Title
-  - Design of a Deep Learning-Based Fatigue Crack Detection System for Train Bogie Frames with 3D Defect Mapping
+### Design of a Deep Learning-Based Fatigue Crack Detection System for Train Bogie Frames with 3D Defect Mapping
 
 ## Setup
 ### Upload 3D Model
