@@ -61,7 +61,6 @@ window.addEventListener('resize', resizeRenderer);
 // Listen for sidebar toggle to force a resize
 window.addEventListener('sidebarToggled', resizeRenderer);
 
-
 // LOAD MODEL
 const loader = new GLTFLoader();
 loader.load(
