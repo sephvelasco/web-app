@@ -6,11 +6,11 @@
   1. Download any 3D model (`.glb` format)
   2. Move file to `/static/models` directory
   3. Open `/static/js/viewer.js`
-  4. Edit line 44 according to file name
+  4. Edit line 67 according to file name
 ```
-  43 loader.load(
-  44   '/static/models/<filename>.glb',
-  45   (gltf) => {
+  66 loader.load(
+  67   '/static/models/<filename>.glb',
+  68   (gltf) => {
 ```
 
 ### Setup for Different Operating Systems
