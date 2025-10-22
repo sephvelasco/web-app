@@ -1,219 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Fatigue Crack Detection Dashboard</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fatigue Crack Detection Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
+        }
       }
-    }
-  </script>
-</head>
+    </script>
+  </head>
 
-<body>
-  <div class="sidebar" id="sidebar">
-    <button id="sidebarToggle" class="hamburger">
+  <body>
+    <div class="sidebar" id="sidebar">
+      <button id="sidebarToggle" class="hamburger">
         <span class="bar"></span>
         <span class="bar"></span>
         <span class="bar"></span>
-    </button>
-     <img src="{{ url_for('static', filename='images/lrmc_vert.png') }}" class="logo" alt="LRMC Logo">
-     <nav>
-      <ul>
-       <li class="active" id="dashboardTab">Dashboard</li>
-       <li id="historyTab">History</li>
-          <li onclick="window.open('https://lrmc.ph/contact-us/', '_blank')">Contacts</li>
-     </ul>
-    </nav>
-  </div>
-
-  <div class="main-content" id="mainContent">
-    <!-- Tabs -->
-    <div class="top-tabs">
-      <div class="tab-btn active" id="imageTab"><b>Image</b>
-        <input type="file" id="imageInput" accept="image/*" hidden>
-        <button id="uploadBtn">Upload</button>
-      </div>
-      <div class="tab-btn" id="modelTab"><b>3D Model</b></div>
+      </button>
+      <img
+        src="{{ url_for('static', filename='images/lrmc_vert.png') }}"
+        class="logo"
+        alt="LRMC Logo"
+      />
+      <nav>
+        <ul>
+          <li class="active" id="dashboardTab">Dashboard</li>
+          <li id="historyTab">History</li>
+          <li onclick="window.open('https://lrmc.ph/contact-us/', '_blank')">
+            Contacts
+          </li>
+        </ul>
+      </nav>
     </div>
 
-    <!-- Viewer Area -->
-    <div class="viewer-area" id="viewerArea">
-      <div id="imageContainer" class="drop-zone">
-        <p class="drop-text">Drag an image here or click Upload</p>
-        <img id="uploadedImage" src="#" alt="Uploaded" />
+    <div class="main-content" id="mainContent">
+      <!-- Tabs -->
+      <div class="top-tabs">
+        <div class="tab-btn active" id="imageTab">
+          <b>Image</b>
+          <input type="file" id="imageInput" accept="image/*" hidden />
+          <button id="uploadBtn">Upload</button>
+        </div>
+        <div class="tab-btn" id="modelTab"><b>3D Model</b></div>
       </div>
-      <canvas id="viewer"></canvas>
+
+      <!-- Viewer Area -->
+      <div class="viewer-area" id="viewerArea">
+        <div id="imageContainer" class="drop-zone">
+          <p class="drop-text">Drag an image here or click Upload</p>
+          <img id="uploadedImage" src="#" alt="Uploaded" />
+        </div>
+        <canvas id="viewer"></canvas>
+      </div>
+
+      <!-- Bottom Info -->
+      <div class="info-section">
+        <div class="info-box">
+          <h3>Bogie Information</h3>
+          <p><b>ID:</b> <span id="bogieId">--</span></p>
+          <p><b>Status:</b> <span id="status">--</span></p>
+          <p><b>Time:</b> <span id="timestamp">--</span></p>
+        </div>
+
+        <div class="info-box scrollable">
+          <h3>Detected Cracks</h3>
+          <ul id="detectionsList"></ul>
+        </div>
+
+        <div class="info-box">
+          <h3>Recommendation</h3>
+          <p id="recommendation">--</p>
+        </div>
+      </div>
     </div>
 
-    <!-- Bottom Info -->
-    <div class="info-section">
-      <div class="info-box">
-        <h3>Bogie Information</h3>
-        <p><b>ID:</b> <span id="bogieId">--</span></p>
-        <p><b>Status:</b> <span id="status">--</span></p>
-        <p><b>Time:</b> <span id="timestamp">--</span></p>
-      </div>
-
-      <div class="info-box scrollable">
-        <h3>Detected Cracks</h3>
-        <ul id="detectionsList"></ul>
-      </div>
-
-      <div class="info-box">
-        <h3>Recommendation</h3>
-        <p id="recommendation">--</p>
-      </div>
-    </div>
-  </div>
-
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
+        }
       }
-    }
-  </script>
-  <script type="module" src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+    </script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/viewer.js') }}"
+    ></script>
 
-  <script>
-  // Tabs & Upload Logic
-  const imageTab = document.getElementById('imageTab');
-  const modelTab = document.getElementById('modelTab');
-  const imageContainer = document.getElementById('imageContainer');
-  const viewerCanvas = document.getElementById('viewer');
-  const uploadBtn = document.getElementById('uploadBtn');
-  const imageInput = document.getElementById('imageInput');
-  const dashboardTab = document.getElementById('dashboardTab');
-  const historyTab = document.getElementById('historyTab');
-  const mainContent = document.getElementById('mainContent');
+    <script>
+      // Tabs & Upload Logic
+      const imageTab = document.getElementById("imageTab");
+      const modelTab = document.getElementById("modelTab");
+      const imageContainer = document.getElementById("imageContainer");
+      const viewerCanvas = document.getElementById("viewer");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const imageInput = document.getElementById("imageInput");
+      const dashboardTab = document.getElementById("dashboardTab");
+      const historyTab = document.getElementById("historyTab");
+      const mainContent = document.getElementById("mainContent");
 
-  let paused = true;
-  viewerCanvas.style.display = 'none';
-  imageContainer.style.display = 'flex';
+      let paused = true;
+      viewerCanvas.style.display = "none";
+      imageContainer.style.display = "flex";
 
-  window.addEventListener('pause3DRender', e => paused = e.detail);
+      window.addEventListener("pause3DRender", (e) => (paused = e.detail));
 
-  imageTab.addEventListener('click', () => {
-    imageTab.classList.add('active');
-    modelTab.classList.remove('active');
-    imageContainer.style.display = 'flex';
-    viewerCanvas.style.display = 'none';
-    window.dispatchEvent(new CustomEvent('pause3DRender', { detail: true }));
-  });
+      imageTab.addEventListener("click", () => {
+        imageTab.classList.add("active");
+        modelTab.classList.remove("active");
+        imageContainer.style.display = "flex";
+        viewerCanvas.style.display = "none";
+        window.dispatchEvent(
+          new CustomEvent("pause3DRender", { detail: true })
+        );
+      });
 
-  modelTab.addEventListener('click', () => {
-    modelTab.classList.add('active');
-    imageTab.classList.remove('active');
-    imageContainer.style.display = 'none';
-    viewerCanvas.style.display = 'block';
-    window.dispatchEvent(new CustomEvent('pause3DRender', { detail: false }));
-  });
+      modelTab.addEventListener("click", () => {
+        modelTab.classList.add("active");
+        imageTab.classList.remove("active");
+        imageContainer.style.display = "none";
+        viewerCanvas.style.display = "block";
+        window.dispatchEvent(
+          new CustomEvent("pause3DRender", { detail: false })
+        );
+      });
 
-  uploadBtn.addEventListener('click', () => imageInput.click());
-  imageInput.addEventListener('change', e => uploadFile(e.target.files[0]));
-  imageContainer.addEventListener('dragover', e => e.preventDefault());
-  imageContainer.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadFile(e.dataTransfer.files[0]);
-  });
+      uploadBtn.addEventListener("click", () => imageInput.click());
+      imageInput.addEventListener("change", (e) =>
+        uploadFile(e.target.files[0])
+      );
+      imageContainer.addEventListener("dragover", (e) => e.preventDefault());
+      imageContainer.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadFile(e.dataTransfer.files[0]);
+      });
 
-  async function uploadFile(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch('/upload', { method: 'POST', body: formData });
-    const data = await res.json();
-    document.querySelector('.drop-text').style.display = 'none';
-    const img = document.getElementById('uploadedImage');
-    img.src = data.image_url;
-    img.style.display = 'block';
+      async function uploadFile(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        document.querySelector(".drop-text").style.display = "none";
+        const img = document.getElementById("uploadedImage");
+        img.src = data.image_url;
+        img.style.display = "block";
 
-    const list = document.getElementById('detectionsList');
-    list.innerHTML = '';
-    data.detections.forEach(det => {
-      const li = document.createElement('li');
-      li.textContent = `${det.class || det.type || det.name || 'unknown'} (${(det.confidence * 100).toFixed(1)}%)`;
-      list.appendChild(li);
-    });
-  }
+        const list = document.getElementById("detectionsList");
+        list.innerHTML = "";
+        data.detections.forEach((det) => {
+          const li = document.createElement("li");
+          li.textContent = `${
+            det.class || det.type || det.name || "unknown"
+          } (${(det.confidence * 100).toFixed(1)}%)`;
+          list.appendChild(li);
+        });
+      }
 
-// History Tab (updated to show detections from database)
-historyTab.addEventListener('click', async () => {
-  dashboardTab.classList.remove('active');
-  historyTab.classList.add('active');
+      // History Tab (updated to show detections from database)
+      historyTab.addEventListener("click", async () => {
+        dashboardTab.classList.remove("active");
+        historyTab.classList.add("active");
 
-  const res = await fetch('/history');
-  const images = await res.json();
+        const res = await fetch("/history");
+        const images = await res.json();
 
-  mainContent.innerHTML = '<h2>Upload History</h2><div class="history-grid"></div>';
-  const grid = document.querySelector('.history-grid');
+        mainContent.innerHTML =
+          '<h2>Upload History</h2><div class="history-grid"></div>';
+        const grid = document.querySelector(".history-grid");
 
-  if (images.length === 0) {
-    grid.innerHTML = '<p>No uploaded images found.</p>';
-    return;
-  }
+        if (images.length === 0) {
+          grid.innerHTML = "<p>No uploaded images found.</p>";
+          return;
+        }
 
-  images.forEach(img => {
-    const div = document.createElement('div');
-    div.className = 'history-item';
-    div.innerHTML = `
+        images.forEach((img) => {
+          const div = document.createElement("div");
+          div.className = "history-item";
+          div.innerHTML = `
       <img src="${img.image_url}" alt="${img.filename}">
       <p><b>${img.filename}</b></p>
       <p><small>${img.timestamp}</small></p>
-      ${img.detections.map(det => `
+      ${img.detections
+        .map(
+          (det) => `
         <p>${det.crack_type} (${det.confidence}%)</p>
-      `).join('')}
+      `
+        )
+        .join("")}
     `;
-    grid.appendChild(div);
-  });
-});
+          grid.appendChild(div);
+        });
+      });
 
-  // Dashboard Tab (restore main layout)
-  dashboardTab.addEventListener('click', () => {
-    location.reload(); // simple restore (could also cache DOM)
-  });
-  </script>
+      // Dashboard Tab (restore main layout)
+      dashboardTab.addEventListener("click", () => {
+        location.reload(); // simple restore (could also cache DOM)
+      });
+    </script>
 
     <!-- Image Preview Overlay -->
-  <div id="imagePreviewOverlay">
-    <div class="preview-content">
-      <img id="previewImage" src="#" alt="Preview">
-      <p id="previewFilename"></p>
-      <span id="closePreview">&times;</span>
+    <div id="imagePreviewOverlay">
+      <div class="preview-content">
+        <img id="previewImage" src="#" alt="Preview" />
+        <p id="previewFilename"></p>
+        <span id="closePreview">&times;</span>
+      </div>
     </div>
-  </div>
 
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-  const sidebar = document.getElementById("sidebar");
-  const toggleBtn = document.getElementById("sidebarToggle");
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const sidebar = document.getElementById("sidebar");
+        const toggleBtn = document.getElementById("sidebarToggle");
 
-  // Start collapsed
-  sidebar.classList.add("collapsed");
-  toggleBtn.classList.remove("open");
+        // Start collapsed
+        sidebar.classList.add("collapsed");
+        toggleBtn.classList.remove("open");
 
-  toggleBtn.addEventListener("click", () => {
-    const isCollapsed = sidebar.classList.contains("collapsed");
+        toggleBtn.addEventListener("click", () => {
+          const isCollapsed = sidebar.classList.contains("collapsed");
 
-    if (isCollapsed) {
-      sidebar.classList.remove("collapsed");
-      toggleBtn.classList.add("open");
-      console.log("Sidebar expanded");
-    } else {
-      sidebar.classList.add("collapsed");
-      toggleBtn.classList.remove("open");
-      console.log("Sidebar collapsed");
-    }
+          if (isCollapsed) {
+            sidebar.classList.remove("collapsed");
+            toggleBtn.classList.add("open");
+            console.log("Sidebar expanded");
+          } else {
+            sidebar.classList.add("collapsed");
+            toggleBtn.classList.remove("open");
+            console.log("Sidebar collapsed");
+          }
 
-    window.dispatchEvent(new Event("resize"));
-  });
-});
-</script>
-
-</body>
+          window.dispatchEvent(new Event("resize"));
+        });
+      });
+    </script>
+  </body>
 </html>
