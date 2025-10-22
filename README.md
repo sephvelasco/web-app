@@ -22,8 +22,6 @@
 |---------------------------------|------------------------------------|
 |1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to WebApp<br>5. Execute Shell Script `./setup_lin.sh`|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to WebApp<br>5. Execute Shell Script `./setup_win.bat`|
 
-> [!WARNING]
-> Fixes for various possible errors during shell script execution
 
 |Possible Errors| Fixes |
 |---------------|-------|
