@@ -2,6 +2,10 @@
 ### Design of a Deep Learning-Based Fatigue Crack Detection System for Train Bogie Frames with 3D Defect Mapping
 
 ## Setup
+
+> [!IMPORTANT]
+> Web Application only works on stable Python releases 3.10 - 3.13.9
+
 ### Upload 3D Model
   1. Download any 3D model (`.glb` format)
   2. Move file to `/static/models` directory
