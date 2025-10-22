@@ -25,7 +25,6 @@
 
 ## Links
 ### [Sample Train Bogie Frame 3D Model](https://drive.google.com/drive/folders/1XeoyBypTwfNWYl4qd4Hxu3EB-nCV4RPv?usp=sharing)
-https://drive.google.com/drive/folders/1XeoyBypTwfNWYl4qd4Hxu3EB-nCV4RPv?usp=sharing 
 
 ## Logs
 ### Web App Template
