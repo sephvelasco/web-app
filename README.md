@@ -25,26 +25,3 @@
 
 ## Links
 ### [Sample Train Bogie Frame 3D Model](https://drive.google.com/drive/folders/1XeoyBypTwfNWYl4qd4Hxu3EB-nCV4RPv?usp=sharing)
-
-## Logs
-### Web App Template
-created October 7
-  - Bare bones template for starting web application
-
-### First Pull Request Merge
-executed October 11
-  - Template with 3D display window
-
-### Second Pull Request Merge
-executed October 13
-  - Initial Draft for Web Application
-
-### Added Dependencies & Shell Script 
-created October 14
-  - Installs Dependencies
-  - Auto-runs app.py
-
-### Added Setup Directions and SQLite Database
-added October 17
-  - Shell Script Directions
-  - Implemented Local SQLite Database
