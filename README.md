@@ -22,6 +22,9 @@
 |---------------------------------|------------------------------------|
 |1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to WebApp<br>5. Execute Shell Script `./setup_lin.sh`|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to WebApp<br>5. Execute Shell Script `./setup_win.bat`|
 
+> [!WARNING]
+> Fixes for various possible errors during shell script execution
+
 |Possible Errors| Fixes |
 |---------------|-------|
 |`bad interpreter: No such file or directory`<br><br>`cannot execute: required file not found`|1. `sudo apt install dos2unix`<br>2. `dos2unix setup_lin.sh`|
