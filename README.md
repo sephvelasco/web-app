@@ -24,7 +24,7 @@
 |`bash: ./setup_lin.sh: Permission denied`|`sudo chmod +x setup_lin.sh`|
 
 ## Links
-### Sample Train Bogie Frame 3D Model
+### [Sample Train Bogie Frame 3D Model](https://drive.google.com/drive/folders/1XeoyBypTwfNWYl4qd4Hxu3EB-nCV4RPv?usp=sharing)
 https://drive.google.com/drive/folders/1XeoyBypTwfNWYl4qd4Hxu3EB-nCV4RPv?usp=sharing 
 
 ## Logs
