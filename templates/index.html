@@ -33,14 +33,42 @@
         <ul>
           <li class="active" id="dashboardTab">Dashboard</li>
           <li id="historyTab">History</li>
-          <li onclick="window.open('https://lrmc.ph/contact-us/', '_blank')">
-            Contacts
-          </li>
+          <li id="liveFeedTab">Live Feed</li>
         </ul>
       </nav>
     </div>
 
     <div class="main-content" id="mainContent">
+      <!-- Camera -->
+      <!-- The style ensures that the container is visible and centered when active -->
+      <div
+        id="liveFeedContainer"
+        style="display: none; text-align: center; padding: 20px"
+      >
+        <h2>Dual-Camera Live Feed</h2>
+        <div id="liveFeedWrapper">
+          <img
+            id="liveFeed"
+            src="/video_feed"
+            alt="Live feed not available."
+            style="
+              width: 90%;
+              max-width: 1280px;
+              border: 2px solid #214390;
+              border-radius: 6px;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            "
+          />
+        </div>
+        <!-- Status for confirming connection -->
+        <p
+          id="liveFeedStatus"
+          style="color: #214390; font-weight: bold; margin-top: 10px"
+        >
+          Click the Live Feed tab to start the stream...
+        </p>
+      </div>
+
       <!-- Tabs -->
       <div class="top-tabs">
         <div class="tab-btn active" id="imageTab">
@@ -219,6 +247,32 @@
         <span id="closePreview">&times;</span>
       </div>
     </div>
+
+    <script>
+      const liveFeedTab = document.getElementById("liveFeedTab");
+
+      liveFeedTab.addEventListener("click", () => {
+        // Highlight correct tab
+        document
+          .querySelectorAll(".sidebar nav ul li")
+          .forEach((li) => li.classList.remove("active"));
+        liveFeedTab.classList.add("active");
+
+        // Replace main content with live feed
+        mainContent.innerHTML = `
+          <h2>Live Camera Feed</h2>
+          <div class="live-feed-container" style="text-align:center;">
+            <img id="liveFeed" src="/video_feed" alt="Live Feed" style="max-width:90%; border:3px solid #214390; border-radius:8px;">
+            <p id="liveFeedStatus">Streaming...</p>
+          </div>
+        `;
+      });
+
+      // Restore dashboard layout when going back
+      dashboardTab.addEventListener("click", () => {
+        location.reload(); // reload restores the full dashboard layout
+      });
+    </script>
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
