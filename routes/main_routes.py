@@ -24,8 +24,17 @@ def upload_image():
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
+    # Run detection
     detections = detector.predict(filepath)
 
+    # Remove previous detections for the same image (if any)
+    existing_records = Detection.query.filter_by(image_filename=filename).all()
+    if existing_records:
+        for rec in existing_records:
+            db.session.delete(rec)
+        db.session.commit()
+
+    # Insert new detections
     for det in detections:
         new_det = Detection(
             image_filename=filename,
@@ -34,6 +43,7 @@ def upload_image():
             recommendation="Inspect and monitor fatigue crack propagation"
         )
         db.session.add(new_det)
+
     db.session.commit()
 
     return jsonify({'image_url': f'/static/uploads/{filename}', 'detections': detections})
