@@ -9,6 +9,12 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+# Clean up any existing venv folder to ensure a fresh start
+if [ -d "venv" ]; then
+    echo "Removing existing venv folder..."
+    rm -rf venv
+fi
+
 # Create Virtual Environment
 echo "Creating Python Virtual Environment"
 echo "-----------------------------------"
@@ -36,3 +42,4 @@ echo "Running Flask"
 echo "-----------------------------------"
 echo "Access Web App at: http://127.0.0.1:5000"
 python3 app.py
+
