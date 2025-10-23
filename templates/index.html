@@ -33,16 +33,28 @@
         <ul>
           <li class="active" id="dashboardTab">Dashboard</li>
           <li id="historyTab">History</li>
-          <li onclick="window.open('https://lrmc.ph/contact-us/', '_blank')">
-            Contacts
+          <li id="liveFeedTab">
+            Live Feed
           </li>
         </ul>
       </nav>
     </div>
 
     <div class="main-content" id="mainContent">
+      <!-- Camera -->
+      <!-- The style ensures that the container is visible and centered when active -->
+      <div id="liveFeedContainer" style="display:none; text-align:center; padding: 20px;">
+        <h2>Dual-Camera Live Feed</h2>
+        <div id="liveFeedWrapper">
+          <img id="liveFeed" src="/video_feed" alt="Live feed not available."
+            style="width:90%; max-width:1280px; border:2px solid #214390; border-radius:6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <!-- Status for confirming connection -->
+        <p id="liveFeedStatus" style="color:#214390; font-weight:bold; margin-top:10px;">Click the Live Feed tab to start the stream...</p>
+      </div>
+      
       <!-- Tabs -->
-      <div class="top-tabs">
+      <div class="top-tabs" id="mainTabs">
         <div class="tab-btn active" id="imageTab">
           <b>Image</b>
           <input type="file" id="imageInput" accept="image/*" hidden />
@@ -105,6 +117,9 @@
       const dashboardTab = document.getElementById("dashboardTab");
       const historyTab = document.getElementById("historyTab");
       const mainContent = document.getElementById("mainContent");
+      const mainTabs = document.getElementById("mainTabs");
+      const viewerArea = document.getElementById("viewerArea");
+      const infoSection = document.querySelector(".info-section");
 
       let paused = true;
       viewerCanvas.style.display = "none";
@@ -166,7 +181,15 @@
       // History Tab (updated to show detections from database)
       historyTab.addEventListener("click", async () => {
         dashboardTab.classList.remove("active");
+        liveFeedTab.classList.remove('active');
         historyTab.classList.add("active");
+        liveFeedContainer.style.display = 'none';
+        
+        mainTabs.style.display = 'none';
+        viewerArea.style.display = 'none';
+        infoSection.style.display = 'none';
+
+        mainContent.style.display = 'block';
 
         const res = await fetch("/history");
         const images = await res.json();
@@ -239,6 +262,78 @@
           window.dispatchEvent(new Event("resize"));
         });
       });
+    </script>
+    
+    <script>
+    const liveFeedTab = document.getElementById('liveFeedTab');
+    const liveFeedContainer = document.getElementById('liveFeedContainer');
+    const liveFeedImg = document.getElementById('liveFeed');
+    const liveFeedStatus = document.getElementById('liveFeedStatus');
+    // Removed redeclaration of variables already defined above: dashboardTab, historyTab, mainContent, mainTabs, viewerArea, infoSection
+    
+    // Function to show/hide main dashboard elements
+    function toggleDashboard(show) {
+        if (show) {
+            mainContent.style.display = 'block';
+            mainTabs.style.display = 'flex';
+            viewerArea.style.display = 'flex';
+            infoSection.style.display = 'flex';
+        } else {
+            mainContent.style.display = 'block'; // Keep mainContent for proper layout flow
+            mainTabs.style.display = 'none';
+            viewerArea.style.display = 'none';
+            infoSection.style.display = 'none';
+        }
+    }
+
+    // Show Live Feed
+    liveFeedTab.addEventListener('click', () => {
+      // Update active state
+      dashboardTab.classList.remove('active');
+      historyTab.classList.remove('active');
+      liveFeedTab.classList.add('active');
+      
+      // Toggle visibility
+      toggleDashboard(false); // Hide main dashboard elements
+      liveFeedContainer.style.display = 'block';
+      
+      // Update status to indicate connection attempt
+      liveFeedStatus.textContent = "Connecting to live stream...";
+      liveFeedStatus.style.color = 'orange';
+
+      // Reload the image source to force a new stream connection
+      liveFeedImg.src = "/video_feed?t=" + new Date().getTime(); 
+      
+      // Handlers for stream connection status
+      liveFeedImg.onerror = () => {
+        liveFeedStatus.textContent = "Error: Could not establish camera feed.";
+        liveFeedStatus.style.color = 'red';
+      };
+      liveFeedImg.onload = () => {
+        liveFeedStatus.textContent = "Live Feed Active (Dual Camera)";
+        liveFeedStatus.style.color = '#214390';
+      }
+    });
+    
+    // Dashboard Tab (restore main layout)
+    dashboardTab.addEventListener('click', () => {
+      liveFeedContainer.style.display = 'none';
+      toggleDashboard(true); // Show main dashboard elements
+      liveFeedTab.classList.remove('active');
+      dashboardTab.classList.add('active');
+
+      // The initial dashboard click already handles reload, but for consistency:
+      location.reload(); 
+    });
+
+    // Initial check to ensure dashboard is visible on load
+    document.addEventListener('DOMContentLoaded', () => {
+        if (dashboardTab.classList.contains('active')) {
+            toggleDashboard(true);
+            liveFeedContainer.style.display = 'none';
+        }
+    });
+
     </script>
   </body>
 </html>
