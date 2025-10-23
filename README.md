@@ -4,8 +4,7 @@
 ## Setup
 
 > [!IMPORTANT]
-> (Windows) Stable Python Releases 3.13.9 or older
-> (Raspberry Pi) Python Releases 3.09 to 3.11
+> Web App works only on stable Python releases 3.13.9 or older
 
 ### Upload 3D Model
   1. Download any 3D model (`.glb` format)
