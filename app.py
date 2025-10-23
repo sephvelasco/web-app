@@ -10,7 +10,7 @@ import numpy as np
 import time
 import atexit
 
-# Only import picamera2 if available
+# Only import picamera2 if available (so it still runs on Windows)
 try:
     from picamera2 import Picamera2
     PICAMERA_AVAILABLE = True
@@ -90,6 +90,8 @@ def cleanup():
             print("Cameras stopped cleanly.")
         except Exception as e:
             print(f"Error stopping cameras: {e}")
+
+# -------------------------------------------------------
 
 with app.app_context():
     db.create_all()
