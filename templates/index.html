@@ -161,6 +161,12 @@
           } (${(det.confidence * 100).toFixed(1)}%)`;
           list.appendChild(li);
         });
+
+        document.getElementById("status").textContent = data.status || "--";
+        document.getElementById("recommendation").textContent =
+          data.recommendation || "--";
+        document.getElementById("timestamp").textContent =
+          data.timestamp || "--";
       }
 
       // History Tab (updated to show detections from database)

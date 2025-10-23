@@ -11,10 +11,11 @@ echo Upgrading pip...
 echo --------------------------
 py -m pip install --upgrade pip
 
-:: Install Dependencies
-echo Installing dependencies...
-echo --------------------------
-py -m pip install -r requirements.txt
+:: Install Dependencies and Filter Linux-only Packages
+echo Filtering Linux-only dependencies from requirements.txt...
+findstr /v "picamera2 libcamera" requirements.txt > temp_requirements.txt
+py -m pip install -r temp_requirements.txt
+del temp_requirements.txt
 
 :: Start Flask
 echo Setup Complete!

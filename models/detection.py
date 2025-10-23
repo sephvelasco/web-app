@@ -9,6 +9,7 @@ class Detection(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     image_filename = db.Column(db.String(255), nullable=False)
     crack_type = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(100), nullable=True)
     confidence = db.Column(db.Float, nullable=False)
     gantry_x = db.Column(db.Float, nullable=True)
     gantry_y = db.Column(db.Float, nullable=True)

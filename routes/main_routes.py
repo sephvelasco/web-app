@@ -4,6 +4,7 @@ import os
 from services.detector_service import CrackDetector
 from models import db
 from models.detection import Detection
+from datetime import datetime
 
 main_bp = Blueprint('main', __name__)
 
@@ -24,29 +25,41 @@ def upload_image():
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Run detection
     detections = detector.predict(filepath)
 
-    # Remove previous detections for the same image (if any)
-    existing_records = Detection.query.filter_by(image_filename=filename).all()
-    if existing_records:
-        for rec in existing_records:
-            db.session.delete(rec)
-        db.session.commit()
+    # Determine crack types
+    crack_types = [det.get('name', 'unknown').lower() for det in detections]
+    status = "Normal"
+    recommendation = "No significant defects detected."
 
-    # Insert new detections
+    if "transverse" in crack_types and "longitudinal" in crack_types:
+        status = "For Replacement"
+        recommendation = "Replace Train Bogie Frame"
+    elif "transverse" in crack_types:
+        status = "For Replacement"
+        recommendation = "Replace Train Bogie Frame"
+    elif "longitudinal" in crack_types:
+        status = "For Repair"
+        recommendation = "Reweld Area Along The Crack"
+
+    # Save detections in DB
     for det in detections:
         new_det = Detection(
             image_filename=filename,
             crack_type=det.get('name', 'unknown'),
             confidence=det.get('confidence', 0.0),
-            recommendation="Inspect and monitor fatigue crack propagation"
+            recommendation=recommendation
         )
         db.session.add(new_det)
-
     db.session.commit()
 
-    return jsonify({'image_url': f'/static/uploads/{filename}', 'detections': detections})
+    return jsonify({
+        'image_url': f'/static/uploads/{filename}',
+        'detections': detections,
+        'status': status,
+        'recommendation': recommendation,
+        'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    })
 
 @main_bp.route('/history')
 def history():
