@@ -1,4 +1,5 @@
-// Import Three.js and OrbitControls
+// static/js/viewer.js
+
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -6,7 +7,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const viewerArea = document.getElementById('viewerArea');
 const viewerCanvas = document.getElementById('viewer');
 
-// SCENE & RENDERER 
+// SCENE & RENDERER
 const renderer = new THREE.WebGLRenderer({ canvas: viewerCanvas, antialias: true });
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf0f0f0);
@@ -34,8 +35,11 @@ controls.target.set(0, 1, 0);
 controls.minDistance = 5;
 controls.maxDistance = 5000;
 
-// RESPONSIVE RESIZING LOGIC
-const resizeRenderer = () => {
+/**
+ * Handles resizing the renderer and camera when the container size changes.
+ * This function is exported to be called by other modules (like sidebar.js).
+ */
+export const resizeRenderer = () => {
     // 1. Get the current dimensions of the parent container
     const rect = viewerArea.getBoundingClientRect();
     const containerWidth = rect.width;
@@ -43,7 +47,7 @@ const resizeRenderer = () => {
 
     // 2. Set the renderer size to fill the container
     renderer.setSize(containerWidth, containerHeight);
-    
+
     // 3. Update the camera aspect ratio
     camera.aspect = containerWidth / containerHeight;
     camera.updateProjectionMatrix();
@@ -56,9 +60,9 @@ const resizeRenderer = () => {
 // Initial setup call
 resizeRenderer();
 
-// Add event listeners for resizing
-window.addEventListener('resize', resizeRenderer); 
-// Listen for sidebar toggle to force a resize
+// Add global event listeners for resizing
+window.addEventListener('resize', resizeRenderer);
+// sidebar.js will dispatch 'sidebarToggled'
 window.addEventListener('sidebarToggled', resizeRenderer);
 
 // LOAD MODEL
@@ -94,8 +98,10 @@ loader.load(
     }
 );
 
-// ANIMATION LOOP & OTHER LOGIC
+// ANIMATION LOOP & PAUSE LOGIC
 let paused = false;
+
+// Listens for the event dispatched by dashboard.js when switching tabs
 window.addEventListener('pause3DRender', (e) => {
     paused = e.detail;
 });
@@ -108,30 +114,3 @@ function animate() {
     }
 }
 animate();
-
-// IMAGE PREVIEW
-document.addEventListener('dblclick', function(e) {
-    if (e.target.closest('.history-item img')) {
-        const img = e.target.closest('.history-item img');
-        const src = img.src;
-        const filename = img.nextElementSibling.textContent;
-
-        const overlay = document.getElementById('imagePreviewOverlay');
-        const previewImg = document.getElementById('previewImage');
-        const previewName = document.getElementById('previewFilename');
-
-        previewImg.src = src;
-        previewName.textContent = filename;
-        overlay.style.display = 'flex';
-    }
-});
-
-document.getElementById('closePreview').addEventListener('click', () => {
-    document.getElementById('imagePreviewOverlay').style.display = 'none';
-});
-
-document.getElementById('imagePreviewOverlay').addEventListener('click', (e) => {
-    if (e.target.id === 'imagePreviewOverlay') {
-        e.currentTarget.style.display = 'none';
-    }
-});

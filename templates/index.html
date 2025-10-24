@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fatigue Crack Detection Dashboard</title>
     <link
       rel="stylesheet"
@@ -18,7 +19,7 @@
   </head>
 
   <body>
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar collapsed" id="sidebar">
       <button id="sidebarToggle" class="hamburger">
         <span class="bar"></span>
         <span class="bar"></span>
@@ -31,215 +32,72 @@
       />
       <nav>
         <ul>
-          <li class="active" id="dashboardTab">Dashboard</li>
-          <li id="historyTab">History</li>
-          <li id="liveFeedTab">Live Feed</li>
+          <li class="nav-tab active" id="dashboardTab" data-view="dashboard">Dashboard</li>
+          <li class="nav-tab" id="historyTab" data-view="history">History</li>
+          <li class="nav-tab" id="liveFeedTab" data-view="livefeed">Live Feed</li>
         </ul>
       </nav>
     </div>
 
     <div class="main-content" id="mainContent">
-      <!-- Camera -->
-      <!-- The style ensures that the container is visible and centered when active -->
-      <div
-        id="liveFeedContainer"
-        style="display: none; text-align: center; padding: 20px"
-      >
-        <h2>Dual-Camera Live Feed</h2>
-        <div id="liveFeedWrapper">
+      <div id="dashboardView">
+        <div class="top-tabs">
+          <div class="tab-btn active" id="imageTab" data-content="image">
+            <b>Image</b>
+            <input type="file" id="imageInput" accept="image/*" hidden />
+            <button id="uploadBtn">Upload</button>
+          </div>
+          <div class="tab-btn" id="modelTab" data-content="model"><b>3D Model</b></div>
+        </div>
+
+        <div class="viewer-area" id="viewerArea">
+          <div id="imageContainer" class="drop-zone" style="display: flex;">
+            <p class="drop-text">Drag an image here or click Upload</p>
+            <img id="uploadedImage" src="#" alt="Uploaded" style="display: none;" />
+          </div>
+          <canvas id="viewer" style="display: none;"></canvas>
+        </div>
+
+        <div class="info-section">
+          <div class="info-box">
+            <h3>Bogie Information</h3>
+            <p><b>ID:</b> <span id="bogieId">--</span></p>
+            <p><b>Status:</b> <span id="status">--</span></p>
+            <p><b>Time:</b> <span id="timestamp">--</span></p>
+          </div>
+
+          <div class="info-box scrollable">
+            <h3>Detected Cracks</h3>
+            <ul id="detectionsList"></ul>
+          </div>
+
+          <div class="info-box">
+            <h3>Recommendation</h3>
+            <p id="recommendation">--</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="historyView" style="display: none;"></div>
+
+      <div id="liveFeedView" style="display: none; text-align: center;">
+        <h2>Live Camera Feed</h2>
+        <div class="live-feed-container">
           <img
             id="liveFeed"
             src="/video_feed"
-            alt="Live feed not available."
+            alt="Live Feed"
             style="
-              width: 90%;
-              max-width: 1280px;
-              border: 2px solid #214390;
-              border-radius: 6px;
-              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+              max-width: 90%;
+              border: 3px solid #214390;
+              border-radius: 8px;
             "
           />
-        </div>
-        <!-- Status for confirming connection -->
-        <p
-          id="liveFeedStatus"
-          style="color: #214390; font-weight: bold; margin-top: 10px"
-        >
-          Click the Live Feed tab to start the stream...
-        </p>
-      </div>
-
-      <!-- Tabs -->
-      <div class="top-tabs">
-        <div class="tab-btn active" id="imageTab">
-          <b>Image</b>
-          <input type="file" id="imageInput" accept="image/*" hidden />
-          <button id="uploadBtn">Upload</button>
-        </div>
-        <div class="tab-btn" id="modelTab"><b>3D Model</b></div>
-      </div>
-
-      <!-- Viewer Area -->
-      <div class="viewer-area" id="viewerArea">
-        <div id="imageContainer" class="drop-zone">
-          <p class="drop-text">Drag an image here or click Upload</p>
-          <img id="uploadedImage" src="#" alt="Uploaded" />
-        </div>
-        <canvas id="viewer"></canvas>
-      </div>
-
-      <!-- Bottom Info -->
-      <div class="info-section">
-        <div class="info-box">
-          <h3>Bogie Information</h3>
-          <p><b>ID:</b> <span id="bogieId">--</span></p>
-          <p><b>Status:</b> <span id="status">--</span></p>
-          <p><b>Time:</b> <span id="timestamp">--</span></p>
-        </div>
-
-        <div class="info-box scrollable">
-          <h3>Detected Cracks</h3>
-          <ul id="detectionsList"></ul>
-        </div>
-
-        <div class="info-box">
-          <h3>Recommendation</h3>
-          <p id="recommendation">--</p>
+          <p id="liveFeedStatus">Click the Live Feed tab to start the stream...</p>
         </div>
       </div>
     </div>
 
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
-        }
-      }
-    </script>
-    <script
-      type="module"
-      src="{{ url_for('static', filename='js/viewer.js') }}"
-    ></script>
-
-    <script>
-      // Tabs & Upload Logic
-      const imageTab = document.getElementById("imageTab");
-      const modelTab = document.getElementById("modelTab");
-      const imageContainer = document.getElementById("imageContainer");
-      const viewerCanvas = document.getElementById("viewer");
-      const uploadBtn = document.getElementById("uploadBtn");
-      const imageInput = document.getElementById("imageInput");
-      const dashboardTab = document.getElementById("dashboardTab");
-      const historyTab = document.getElementById("historyTab");
-      const mainContent = document.getElementById("mainContent");
-
-      let paused = true;
-      viewerCanvas.style.display = "none";
-      imageContainer.style.display = "flex";
-
-      window.addEventListener("pause3DRender", (e) => (paused = e.detail));
-
-      imageTab.addEventListener("click", () => {
-        imageTab.classList.add("active");
-        modelTab.classList.remove("active");
-        imageContainer.style.display = "flex";
-        viewerCanvas.style.display = "none";
-        window.dispatchEvent(
-          new CustomEvent("pause3DRender", { detail: true })
-        );
-      });
-
-      modelTab.addEventListener("click", () => {
-        modelTab.classList.add("active");
-        imageTab.classList.remove("active");
-        imageContainer.style.display = "none";
-        viewerCanvas.style.display = "block";
-        window.dispatchEvent(
-          new CustomEvent("pause3DRender", { detail: false })
-        );
-      });
-
-      uploadBtn.addEventListener("click", () => imageInput.click());
-      imageInput.addEventListener("change", (e) =>
-        uploadFile(e.target.files[0])
-      );
-      imageContainer.addEventListener("dragover", (e) => e.preventDefault());
-      imageContainer.addEventListener("drop", (e) => {
-        e.preventDefault();
-        uploadFile(e.dataTransfer.files[0]);
-      });
-
-      async function uploadFile(file) {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetch("/upload", { method: "POST", body: formData });
-        const data = await res.json();
-        document.querySelector(".drop-text").style.display = "none";
-        const img = document.getElementById("uploadedImage");
-        img.src = data.image_url;
-        img.style.display = "block";
-
-        const list = document.getElementById("detectionsList");
-        list.innerHTML = "";
-        data.detections.forEach((det) => {
-          const li = document.createElement("li");
-          li.textContent = `${
-            det.class || det.type || det.name || "unknown"
-          } (${(det.confidence * 100).toFixed(1)}%)`;
-          list.appendChild(li);
-        });
-
-        document.getElementById("status").textContent = data.status || "--";
-        document.getElementById("recommendation").textContent =
-          data.recommendation || "--";
-        document.getElementById("timestamp").textContent =
-          data.timestamp || "--";
-      }
-
-      // History Tab (updated to show detections from database)
-      historyTab.addEventListener("click", async () => {
-        dashboardTab.classList.remove("active");
-        historyTab.classList.add("active");
-
-        const res = await fetch("/history");
-        const images = await res.json();
-
-        mainContent.innerHTML =
-          '<h2>Upload History</h2><div class="history-grid"></div>';
-        const grid = document.querySelector(".history-grid");
-
-        if (images.length === 0) {
-          grid.innerHTML = "<p>No uploaded images found.</p>";
-          return;
-        }
-
-        images.forEach((img) => {
-          const div = document.createElement("div");
-          div.className = "history-item";
-          div.innerHTML = `
-      <img src="${img.image_url}" alt="${img.filename}">
-      <p><b>${img.filename}</b></p>
-      <p><small>${img.timestamp}</small></p>
-      ${img.detections
-        .map(
-          (det) => `
-        <p>${det.crack_type} (${det.confidence}%)</p>
-      `
-        )
-        .join("")}
-    `;
-          grid.appendChild(div);
-        });
-      });
-
-      // Dashboard Tab (restore main layout)
-      dashboardTab.addEventListener("click", () => {
-        location.reload(); // simple restore (could also cache DOM)
-      });
-    </script>
-
-    <!-- Image Preview Overlay -->
     <div id="imagePreviewOverlay">
       <div class="preview-content">
         <img id="previewImage" src="#" alt="Preview" />
@@ -248,57 +106,24 @@
       </div>
     </div>
 
-    <script>
-      const liveFeedTab = document.getElementById("liveFeedTab");
-
-      liveFeedTab.addEventListener("click", () => {
-        // Highlight correct tab
-        document
-          .querySelectorAll(".sidebar nav ul li")
-          .forEach((li) => li.classList.remove("active"));
-        liveFeedTab.classList.add("active");
-
-        // Replace main content with live feed
-        mainContent.innerHTML = `
-          <h2>Live Camera Feed</h2>
-          <div class="live-feed-container" style="text-align:center;">
-            <img id="liveFeed" src="/video_feed" alt="Live Feed" style="max-width:90%; border:3px solid #214390; border-radius:8px;">
-            <p id="liveFeedStatus">Streaming...</p>
-          </div>
-        `;
-      });
-
-      // Restore dashboard layout when going back
-      dashboardTab.addEventListener("click", () => {
-        location.reload(); // reload restores the full dashboard layout
-      });
-    </script>
-
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const sidebar = document.getElementById("sidebar");
-        const toggleBtn = document.getElementById("sidebarToggle");
-
-        // Start collapsed
-        sidebar.classList.add("collapsed");
-        toggleBtn.classList.remove("open");
-
-        toggleBtn.addEventListener("click", () => {
-          const isCollapsed = sidebar.classList.contains("collapsed");
-
-          if (isCollapsed) {
-            sidebar.classList.remove("collapsed");
-            toggleBtn.classList.add("open");
-            console.log("Sidebar expanded");
-          } else {
-            sidebar.classList.add("collapsed");
-            toggleBtn.classList.remove("open");
-            console.log("Sidebar collapsed");
-          }
-
-          window.dispatchEvent(new Event("resize"));
-        });
-      });
-    </script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/viewer.js') }}"
+    ></script>
+    <script
+      src="{{ url_for('static', filename='js/sidebar.js') }}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/dashboard.js') }}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/history.js') }}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/livefeed.js') }}"
+    ></script>
   </body>
 </html>
