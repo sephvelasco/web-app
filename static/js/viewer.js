@@ -1,11 +1,11 @@
-// static/js/viewer.js
-
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+
 const viewerArea = document.getElementById('viewerArea');
 const viewerCanvas = document.getElementById('viewer');
+
 
 // SCENE & RENDERER
 const renderer = new THREE.WebGLRenderer({ canvas: viewerCanvas, antialias: true });
@@ -35,10 +35,6 @@ controls.target.set(0, 1, 0);
 controls.minDistance = 5;
 controls.maxDistance = 5000;
 
-/**
- * Handles resizing the renderer and camera when the container size changes.
- * This function is exported to be called by other modules (like sidebar.js).
- */
 export const resizeRenderer = () => {
     // 1. Get the current dimensions of the parent container
     const rect = viewerArea.getBoundingClientRect();
@@ -113,4 +109,5 @@ function animate() {
         renderer.render(scene, camera);
     }
 }
+
 animate();
