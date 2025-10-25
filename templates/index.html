@@ -25,8 +25,9 @@
         <span class="bar"></span>
         <span class="bar"></span>
       </button>
+      <!-- client_logo.png -->
       <img
-        src="{{ url_for('static', filename='images/pnr_logo.png') }}" # lrmc_logo
+        src="{{ url_for('static', filename='images/pnr_logo.png') }}"
         class="logo"
         alt="LRMC Logo"
       />
@@ -83,13 +84,14 @@
       <div id="liveFeedView" style="display: none; text-align: center;">
         <h2>Live Camera Feed</h2>
         <div class="live-feed-container">
+          <!-- Client colours: LRMC: #214390, PNR: #191970 --> 
           <img
             id="liveFeed"
             src="/video_feed"
             alt="Live Feed"
             style="
               max-width: 90%;
-              border: 3px solid #191970; #214390
+              border: 3px solid #191970;
               border-radius: 8px;
             "
           />
@@ -126,8 +128,4 @@
       src="{{ url_for('static', filename='js/livefeed.js') }}"
     ></script>
   </body>
-
 </html>
-
-
-
