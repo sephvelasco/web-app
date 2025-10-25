@@ -1,9 +1,8 @@
-/* NOTE: CHANGE COLOURS BASED ON CLIENT
-
-    PNR: #191970 (Midnight Blue)
-    LRMC: #214390 (Dark Blue)
-
-*/
+/* ================================
+   CLIENT COLOUR SCHEME
+   PNR: #191970 (Midnight Blue)
+   LRMC: #214390 (Dark Blue)
+================================== */
 
 body {
   margin: 0;
@@ -13,7 +12,9 @@ body {
   overflow: hidden;
 }
 
-/* SIDEBAR */
+/* ================================
+   SIDEBAR
+================================== */
 .sidebar {
   position: fixed;
   top: 0;
@@ -32,26 +33,15 @@ body {
 }
 
 .logo {
-  width: 70%;
+  width: 150px;
   display: block;
-  margin: 60px auto 20px;
+  margin: 40px auto 5px;
   transition: opacity 0.3s ease;
 }
 
 .sidebar.collapsed .logo,
 .sidebar.collapsed nav {
   display: none;
-}
-
-.sidebar .logo {
-  width: 150px;
-  display: block;
-  margin: 40px auto 5px;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-
-.sidebar nav {
-  transition: opacity 0.2s ease, transform 0.25s ease;
 }
 
 .sidebar nav ul {
@@ -67,8 +57,6 @@ body {
   cursor: pointer;
   transition: background 0.15s;
   user-select: none;
-  width: calc(100% - 20px); /* make button wider */
-  box-sizing: border-box;
 }
 
 .sidebar nav ul li:hover {
@@ -79,15 +67,15 @@ body {
   background-color: rgba(255, 255, 255, 0.18);
 }
 
-/* Keep clickable area wide even when collapsed */
 .sidebar.collapsed nav ul li {
   padding: 12px 8px;
   margin: 6px 0;
   text-align: center;
-  width: 100%;
 }
 
-/* Hamburger Button */
+/* ================================
+   HAMBURGER BUTTON
+================================== */
 .hamburger {
   position: absolute;
   top: 14px;
@@ -102,10 +90,8 @@ body {
   width: 25px;
   padding: 0;
   z-index: 1100;
-  outline: none;
 }
 
-/* Hamburg */
 .hamburger .bar {
   height: 3px;
   width: 100%;
@@ -114,7 +100,7 @@ body {
   transition: transform 0.25s ease, opacity 0.2s ease;
 }
 
-/* X when expanded */
+/* Transform into "X" when expanded */
 .hamburger.open .bar:nth-child(1) {
   transform: rotate(45deg) translate(5px, 6px);
 }
@@ -125,30 +111,9 @@ body {
   transform: rotate(-45deg) translate(6px, -7px);
 }
 
-/* Hamburger when collapsed */
-.hamburger:not(.open) .bar {
-  transform: none;
-  opacity: 1;
-}
-
-/* ========== Content shift when collapsed ========== */
-.main-content {
-  margin-left: 220px;
-  transition: margin-left 0.3s ease;
-}
-
-.sidebar.collapsed ~ .main-content,
-.sidebar.collapsed + .main-content {
-  margin-left: 55px;
-}
-
-/* Sidebar displays nothing */
-.sidebar.collapsed nav ul li span,
-.sidebar.collapsed nav ul li a {
-  display: none;
-}
-
-/* MAIN CONTENT */
+/* ================================
+   MAIN CONTENT LAYOUT
+================================== */
 .main-content {
   margin-left: 220px;
   transition: margin-left 0.3s ease;
@@ -157,22 +122,23 @@ body {
   flex-direction: column;
   height: 100vh;
   padding: 10px;
-  overflow-y: hidden;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
-.sidebar.collapsed ~ .main-content,
-.sidebar.collapsed + .main-content {
+.sidebar.collapsed ~ .main-content {
   margin-left: 55px;
 }
 
-/* TABS */
+/* ================================
+   TABS (Image / 3D Model)
+================================== */
 .top-tabs {
   display: flex;
   justify-content: space-around;
   border: 3px solid #191970;
   border-radius: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   height: 55px;
   box-sizing: border-box;
 }
@@ -186,8 +152,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
   border-right: 3px solid #191970;
+  font-size: 15px;
 }
 
 .tab-btn:last-child {
@@ -201,12 +167,22 @@ body {
 
 #uploadBtn {
   margin-left: 10px;
-  font-size: 12px;
+  font-size: 13px;
+  padding: 3px 6px;
 }
 
-/* VIEWER AREA */
+/* ================================
+   VIEWER AREA
+================================== */
+#dashboardView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .viewer-area {
-  height: calc(100vh - 295px);
+  flex: 1 1 auto;
+  height: calc(100vh - 230px);
   border: 2px solid #191970;
   border-radius: 6px;
   display: flex;
@@ -214,6 +190,7 @@ body {
   align-items: center;
   overflow: hidden;
   box-sizing: border-box;
+  min-height: 300px;
 }
 
 .drop-zone {
@@ -249,18 +226,15 @@ body {
   height: 100%;
 }
 
-#viewer,
-.drop-zone {
-  width: 100%;
-  height: 100%;
-}
-
-/* INFO SECTION */
+/* ================================
+   INFO SECTION
+================================== */
 .info-section {
   display: flex;
-  margin-top: 10px;
+  flex-shrink: 0;
+  margin-top: 6px;
   border: 3px solid #191970;
-  height: 180px;
+  height: 130px;
   box-sizing: border-box;
 }
 
@@ -290,7 +264,7 @@ body {
 .info-box p,
 .info-box ul {
   margin: 6px 10px;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .scrollable {
@@ -298,37 +272,48 @@ body {
   flex-grow: 1;
 }
 
-/* HISTORY GRID */
+/* ================================
+   HISTORY GRID
+================================== */
 .history-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  padding: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 15px;
   overflow-y: auto;
   height: calc(100vh - 40px);
   box-sizing: border-box;
 }
 
-.history-item img {
-  width: 100%;
-  height: 120px;
-  border-radius: 4px;
-  object-fit: cover;
-}
-
-.history-item p {
+.history-item {
+  background: white;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
   text-align: center;
-  font-size: 12px;
-  color: #333;
-  margin: 3px 0 0 0;
-}
-
-.history-item img:hover {
-  transform: scale(1.03);
   transition: transform 0.2s ease;
 }
 
-/* IMAGE PREVIEW OVERLAY */
+.history-item:hover {
+  transform: scale(1.03);
+}
+
+.history-item img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.history-item p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #333;
+}
+
+/* ================================
+   IMAGE PREVIEW OVERLAY
+================================== */
 #imagePreviewOverlay {
   position: fixed;
   top: 0;
@@ -382,36 +367,4 @@ body {
 
 #closePreview:hover {
   background: rgba(0, 0, 0, 0.5);
-}
-
-.history-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-  padding: 15px;
-}
-
-.history-item {
-  background: white;
-  border: 2px solid #ccc;
-  border-radius: 8px;
-  padding: 10px;
-  text-align: center;
-  transition: transform 0.2s ease;
-}
-
-.history-item:hover {
-  transform: scale(1.03);
-}
-
-.history-item img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  border-radius: 5px;
-}
-
-.history-item p {
-  margin: 4px 0;
-  font-size: 13px;
 }

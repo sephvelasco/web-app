@@ -27,7 +27,6 @@ def upload_image():
 
     detections = detector.predict(filepath)
 
-    # Determine crack types
     crack_types = [det.get('name', 'unknown').lower() for det in detections]
     status = "Normal"
     recommendation = "No significant defects detected."
@@ -42,15 +41,18 @@ def upload_image():
         status = "For Repair"
         recommendation = "Reweld Area Along The Crack"
 
-    # Save detections in DB
+    Detection.query.filter_by(image_filename=filename).delete()
+
     for det in detections:
         new_det = Detection(
             image_filename=filename,
             crack_type=det.get('name', 'unknown'),
             confidence=det.get('confidence', 0.0),
-            recommendation=recommendation
+            recommendation=recommendation,
+            status=status
         )
         db.session.add(new_det)
+
     db.session.commit()
 
     return jsonify({
