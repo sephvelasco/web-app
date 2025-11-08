@@ -29,12 +29,16 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 
+# Initialize YOLO detector
+detector = CrackDetector("model/best.pt")
+
 # ---------------- Camera configuration ----------------
 cam0 = None
 cam1 = None
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 is_picamera_initialized = False
+DETECTION_ENABLED = False  # <--- NEW toggle flag
 
 if PICAMERA_AVAILABLE and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
     try:
@@ -54,7 +58,7 @@ else:
 
 def generate_frames():
     """Yields concatenated frames from both cameras or a placeholder."""
-    global cam0, cam1
+    global cam0, cam1, DETECTION_ENABLED
     if not PICAMERA_AVAILABLE or not is_picamera_initialized:
         frame = np.zeros((FRAME_HEIGHT, FRAME_WIDTH * 2, 3), dtype=np.uint8)
         cv2.putText(frame, "Camera Not Available", (100, FRAME_HEIGHT // 2),
@@ -68,13 +72,25 @@ def generate_frames():
             f0 = cv2.cvtColor(cam0.capture_array(), cv2.COLOR_RGB2BGR)
             f1 = cv2.cvtColor(cam1.capture_array(), cv2.COLOR_RGB2BGR)
             frame = cv2.hconcat([f0, f1])
-        except Exception:
+
+            # If detection is ON, run YOLO on the combined frame
+            if DETECTION_ENABLED:
+                frame = detector.predict_frame(frame)
+
+        except Exception as e:
             frame = np.zeros((FRAME_HEIGHT, FRAME_WIDTH * 2, 3), dtype=np.uint8)
             cv2.putText(frame, "Waiting for frames...", (100, FRAME_HEIGHT // 2),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
         ret, buffer = cv2.imencode('.jpg', frame)
         yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n'
+
+@app.route("/toggle_detection", methods=["POST"])
+def toggle_detection():
+    """Toggle real-time crack detection."""
+    global DETECTION_ENABLED
+    DETECTION_ENABLED = not DETECTION_ENABLED
+    return jsonify({"detection_enabled": DETECTION_ENABLED})
 
 @app.route("/video_feed")
 def video_feed():
