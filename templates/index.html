@@ -33,9 +33,13 @@
       />
       <nav>
         <ul>
-          <li class="nav-tab active" id="dashboardTab" data-view="dashboard">Dashboard</li>
+          <li class="nav-tab active" id="dashboardTab" data-view="dashboard">
+            Dashboard
+          </li>
           <li class="nav-tab" id="historyTab" data-view="history">History</li>
-          <li class="nav-tab" id="liveFeedTab" data-view="livefeed">Live Feed</li>
+          <li class="nav-tab" id="liveFeedTab" data-view="livefeed">
+            Live Feed
+          </li>
         </ul>
       </nav>
     </div>
@@ -48,15 +52,22 @@
             <input type="file" id="imageInput" accept="image/*" hidden />
             <button id="uploadBtn">Upload</button>
           </div>
-          <div class="tab-btn" id="modelTab" data-content="model"><b>3D Model</b></div>
+          <div class="tab-btn" id="modelTab" data-content="model">
+            <b>3D Model</b>
+          </div>
         </div>
 
         <div class="viewer-area" id="viewerArea">
-          <div id="imageContainer" class="drop-zone" style="display: flex;">
+          <div id="imageContainer" class="drop-zone" style="display: flex">
             <p class="drop-text">Drag an image here or click Upload</p>
-            <img id="uploadedImage" src="#" alt="Uploaded" style="display: none;" />
+            <img
+              id="uploadedImage"
+              src="#"
+              alt="Uploaded"
+              style="display: none"
+            />
           </div>
-          <canvas id="viewer" style="display: none;"></canvas>
+          <canvas id="viewer" style="display: none"></canvas>
         </div>
 
         <div class="info-section">
@@ -79,12 +90,12 @@
         </div>
       </div>
 
-      <div id="historyView" style="display: none;"></div>
+      <div id="historyView" style="display: none"></div>
 
-      <div id="liveFeedView" style="display: none; text-align: center;">
+      <div id="liveFeedView" style="display: none; text-align: center">
         <h2>Live Camera Feed</h2>
         <div class="live-feed-container">
-          <!-- Client colours: LRMC: #214390, PNR: #191970 --> 
+          <!-- Client colours: LRMC: #214390, PNR: #191970 -->
           <img
             id="liveFeed"
             src="/video_feed"
@@ -95,7 +106,23 @@
               border-radius: 8px;
             "
           />
-          <p id="liveFeedStatus">Click the Live Feed tab to start the stream...</p>
+          <p id="liveFeedStatus">
+            Click the Live Feed tab to start the stream...
+          </p>
+          <button
+            id="toggleDetectionBtn"
+            style="
+              margin-top: 15px;
+              padding: 8px 16px;
+              background-color: #191970;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+            "
+          >
+            Start Detection
+          </button>
         </div>
       </div>
     </div>
@@ -112,9 +139,7 @@
       type="module"
       src="{{ url_for('static', filename='js/viewer.js') }}"
     ></script>
-    <script
-      src="{{ url_for('static', filename='js/sidebar.js') }}"
-    ></script>
+    <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
     <script
       type="module"
       src="{{ url_for('static', filename='js/dashboard.js') }}"

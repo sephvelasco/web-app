@@ -1,4 +1,5 @@
 from ultralytics import YOLO
+import cv2
 # from services.detector_service import CrackDetector
 
 class CrackDetector:
@@ -41,3 +42,19 @@ class CrackDetector:
         except Exception as e:
             print(f"An error occurred during prediction: {e}")
             return []
+        
+    def predict_frame(self, frame):
+        """
+        Performs YOLO inference directly on a live frame (BGR image).
+        Returns the same frame with bounding boxes drawn.
+        """
+        if self.model is None:
+            return frame
+
+        try:
+            results = self.model.predict(source=frame, verbose=False)
+            annotated = results[0].plot()  # Draw bounding boxes
+            return annotated
+        except Exception as e:
+            print(f"Error during live detection: {e}")
+            return frame
