@@ -54,7 +54,6 @@ export const resizeRenderer = () => {
   viewerCanvas.style.height = "100%";
 };
 
-// Initial setup call
 resizeRenderer();
 
 // Add global event listeners for resizing
@@ -112,3 +111,4 @@ function animate() {
 }
 
 animate();
+
