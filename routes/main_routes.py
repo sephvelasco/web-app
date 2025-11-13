@@ -9,7 +9,7 @@ from datetime import datetime
 main_bp = Blueprint('main', __name__)
 
 # Initialize YOLO
-detector = CrackDetector('model/best.pt')
+#detector = CrackDetector('model/best.pt')
 
 @main_bp.route('/')
 def dashboard():
@@ -25,7 +25,7 @@ def upload_image():
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    detections = detector.predict(filepath)
+    detections = current_app.detector.predict(filepath)
 
     crack_types = [det.get('name', 'unknown').lower() for det in detections]
     status = "Normal"
