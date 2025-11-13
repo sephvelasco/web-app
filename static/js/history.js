@@ -1,5 +1,3 @@
-// static/js/history.js
-
 const historyTab = document.getElementById("historyTab");
 const mainContent = document.getElementById("mainContent");
 const dashboardTab = document.getElementById("dashboardTab");
@@ -71,7 +69,6 @@ document.addEventListener("dblclick", function (e) {
   const item = e.target.closest(".history-item img");
   if (item) {
     const src = item.src;
-    // Filename is the text content of the next sibling <p>
     const filename = item.nextElementSibling.textContent;
 
     const overlay = document.getElementById("imagePreviewOverlay");

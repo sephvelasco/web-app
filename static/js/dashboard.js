@@ -1,6 +1,3 @@
-// static/js/dashboard.js
-
-// DOM Elements
 const cameraTab = document.getElementById("cameraTab");
 const modelTab = document.getElementById("modelTab");
 const imageTab = document.getElementById("imageTab");
@@ -21,11 +18,11 @@ const statusBox = document.getElementById("status");
 const recommendationBox = document.getElementById("recommendation");
 const timestampBox = document.getElementById("timestamp");
 
-// initial view: camera
+// Default to Camera tab on load
 showOnly("camera");
 
 let livePollingHandle = null;
-const POLL_INTERVAL = 1000; // ms
+const POLL_INTERVAL = 1000;
 
 // --- Tab Handlers ---
 cameraTab.addEventListener("click", () => {

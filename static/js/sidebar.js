@@ -1,11 +1,7 @@
-// static/js/sidebar.js
-
 document.addEventListener("DOMContentLoaded", () => {
   const sidebar = document.getElementById("sidebar");
   const toggleBtn = document.getElementById("sidebarToggle");
   const dashboardTab = document.getElementById("dashboardTab");
-
-  // The initial HTML already sets it to 'collapsed', so we just add the listener
 
   toggleBtn.addEventListener("click", () => {
     const isCollapsed = sidebar.classList.contains("collapsed");
@@ -18,13 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
       toggleBtn.classList.remove("open");
     }
 
-    // Dispatch a custom event to notify other components (e.g., Three.js viewer)
-    // that the sidebar has toggled and a resize might be necessary.
     window.dispatchEvent(new Event("sidebarToggled"));
   });
 
-  // Since the original HTML relied on a full reload to restore the dashboard,
-  // we'll explicitly add the logic here to restore the dashboard view's visibility.
   dashboardTab.addEventListener("click", () => {
     // Manage Active Tabs
     document
@@ -46,12 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (viewerArea) {
       // Wait for browser to finish showing the dashboard
       requestAnimationFrame(() => {
-        // Trigger a flexbox recalculation and resize
         viewerArea.style.minHeight = "0";
-        viewerArea.getBoundingClientRect(); // force reflow
+        viewerArea.getBoundingClientRect();
         viewerArea.style.minHeight = "auto";
 
-        // Notify Three.js renderer or other layout-dependent scripts
         window.dispatchEvent(new Event("resize"));
       });
     }

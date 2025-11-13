@@ -1,5 +1,3 @@
-// static/js/livefeed.js
-
 const liveFeedTab = document.getElementById("liveFeedTab");
 
 liveFeedTab.addEventListener("click", () => {
@@ -19,8 +17,6 @@ liveFeedTab.addEventListener("click", () => {
 
   // Update status message
   document.getElementById("liveFeedStatus").textContent = "Streaming...";
-
-  // Note: The live feed image's src="/video_feed" automatically handles the stream
 });
 
 const toggleDetectionBtn = document.getElementById("toggleDetectionBtn");

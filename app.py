@@ -36,14 +36,12 @@ detector = CrackDetector("model/best.pt")
 
 app.detector = detector
 
-# Globals for live info (updated inside generate_frames)
 app.latest_detections = []
 app.latest_recommendation = "No data"
 app.latest_status = "Idle"
-app.latest_frame_jpeg = None  # bytes of last annotated frame
+app.latest_frame_jpeg = None
 app.detection_enabled = True   # live detection is enabled by default
 
-# detection tuning
 DETECT_EVERY = 3  # run detection every 3 frames for perf
 frame_counter = 0
 
@@ -53,7 +51,7 @@ cam1 = None
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 is_picamera_initialized = False
-DETECTION_ENABLED = False  # <--- NEW toggle flag
+DETECTION_ENABLED = False
 
 if PICAMERA_AVAILABLE and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
     try:
@@ -76,7 +74,6 @@ def generate_frames():
     # combined width = FRAME_WIDTH * 2
     while True:
         frame_counter += 1
-        # get frames (use your existing camera capture code)
         try:
             f0 = cv2.cvtColor(cam0.capture_array(), cv2.COLOR_RGB2BGR)
             f1 = cv2.cvtColor(cam1.capture_array(), cv2.COLOR_RGB2BGR)
@@ -89,15 +86,12 @@ def generate_frames():
         # Run detection only every Nth frame to save CPU
         if app.detection_enabled and frame_counter % DETECT_EVERY == 0:
             try:
-                # Option A: pass numpy array directly to ultralytics YOLO
+                # pass numpy array directly to ultralytics YOLO
                 results = detector.model.predict(frame, verbose=False)  # using ultralytics API
-                # results is a list-like; take first
                 res = results[0]
                 detections_list = []
-                # iterate boxes if present
                 if hasattr(res, "boxes") and res.boxes is not None:
                     boxes = res.boxes  # Ultralytics results object
-                    # coords: boxes.xyxy, conf: boxes.conf, cls: boxes.cls
                     xyxy = boxes.xyxy.numpy() if hasattr(boxes.xyxy, 'numpy') else boxes.xyxy
                     confs = boxes.conf.numpy() if hasattr(boxes.conf, 'numpy') else boxes.conf
                     clss = boxes.cls.numpy() if hasattr(boxes.cls, 'numpy') else boxes.cls
@@ -123,8 +117,6 @@ def generate_frames():
             # Keep last detections if not running detection this frame
             detections_list = app.latest_detections
 
-        # Update app globals (recommendation & status logic)
-        # simplify: compute crack types present
         crack_types = [d['name'].lower() for d in detections_list]
         if "transverse" in crack_types and "longitudinal" in crack_types:
             app.latest_status = "For Replacement"
@@ -149,7 +141,6 @@ def generate_frames():
         if ret:
             app.latest_frame_jpeg = buffer.tobytes()
 
-        # yield MJPEG as usual (annotated)
         yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n'
 
 @app.route("/toggle_detection", methods=["POST"])
@@ -175,10 +166,7 @@ def live_status():
 
 @app.route('/capture', methods=['POST'])
 def capture():
-    """
-    Save the most recent annotated frame to disk and DB only if there are detections.
-    Returns JSON: {saved: bool, image_url: str (if saved), detections: [...]}
-    """
+    """ Save the most recent annotated frame to disk and DB only if there are detections. """
     detections = current_app.latest_detections or []
     if len(detections) == 0:
         return jsonify({'saved': False, 'message': 'No defects detected; not saved.'})

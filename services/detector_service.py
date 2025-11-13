@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 import cv2
-# from services.detector_service import CrackDetector
 
 class CrackDetector:
 
@@ -24,7 +23,7 @@ class CrackDetector:
             
             # Process results
             detections = []
-            result = results[0] #first image 
+            result = results[0]
             class_names = result.names
 
             if result.boxes is not None:

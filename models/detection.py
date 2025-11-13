@@ -1,7 +1,6 @@
 from . import db
 from datetime import datetime
 from models import db
-# from models.detection import Detection
 
 class Detection(db.Model):
     __tablename__ = 'detections'

@@ -77,5 +77,4 @@ def history():
             'confidence': round(det.confidence * 100, 1)
         })
 
-
     return jsonify(list(grouped.values()))
