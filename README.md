@@ -18,9 +18,9 @@
 ```
 
 ### Setup for Different Operating Systems
-| Setup for Linux (`setup_lin.sh`)| Setup for Windows (`setup_win.bat`)|
+| **LINUX SETUP** | **WINDOWS SETUP** |
 |---------------------------------|------------------------------------|
-|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to WebApp<br>5. Execute Shell Script `./setup_lin.sh`|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to WebApp<br>5. Execute Shell Script `./setup_win.bat`|
+|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to web-app-main<br>5. Execute Shell Script `./setup_lin.sh`|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to web-app-main<br>5. Execute Shell Script `./setup_win.bat`|
 
 
 |Possible Errors| Fixes |
