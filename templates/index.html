@@ -27,7 +27,7 @@
       </button>
       <!-- client_logo.png -->
       <img
-        src="{{ url_for('static', filename='images/pnr_logo.png') }}"
+        src="{{ url_for('static', filename='images/lrmc_logo.png') }}"
         class="logo"
         alt="LRMC Logo"
       />
@@ -49,11 +49,6 @@
           </div>
           <div class="tab-btn" id="modelTab" data-content="model">
             <b>3D Model</b>
-          </div>
-          <div class="tab-btn" id="imageTab" data-content="image">
-            <b>Image</b>
-            <input type="file" id="imageInput" accept="image/*" hidden />
-            <button id="uploadBtn">Upload</button>
           </div>
         </div>
 
@@ -85,15 +80,6 @@
               <!-- TO BE REPLACED -->
             </div>
           </div>
-          <div id="imageContainer" class="drop-zone" style="display: flex">
-            <p class="drop-text">Drag an image here or click Upload</p>
-            <img
-              id="uploadedImage"
-              src="#"
-              alt="Uploaded"
-              style="display: none"
-            />
-          </div>
           <canvas id="viewer" style="display: none"></canvas>
         </div>
 
@@ -122,14 +108,14 @@
       <div id="liveFeedView" style="display: none; text-align: center">
         <h2>Live Camera Feed</h2>
         <div class="live-feed-container">
-          <!-- Client colours: LRMC: #214390, PNR: #191970 -->
+          <!-- Client colours: LRMC#214390-->
           <img
             id="liveFeed"
             src="/video_feed"
             alt="Live Feed"
             style="
               max-width: 90%;
-              border: 3px solid #191970;
+              border: 3px solid #214390;
               border-radius: 8px;
             "
           />
@@ -141,7 +127,7 @@
             style="
               margin-top: 15px;
               padding: 8px 16px;
-              background-color: #191970;
+              background-color: #214390;
               color: white;
               border: none;
               border-radius: 6px;

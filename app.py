@@ -12,6 +12,13 @@ import numpy as np
 import time
 import atexit
 
+# Optional: bogie verification model (YOLOv8)
+try:
+    from ultralytics import YOLO
+    ULTRALYTICS_AVAILABLE = True
+except Exception:
+    ULTRALYTICS_AVAILABLE = False
+
 # Only import picamera2 if available
 try:
     from picamera2 import Picamera2
@@ -20,6 +27,7 @@ except ImportError:
     PICAMERA_AVAILABLE = False
 
 app = Flask(__name__, static_url_path='/static')
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-change-me')
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(BASE_DIR, "database.db")
@@ -31,8 +39,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 
-# Initialize YOLO detector
-detector = CrackDetector("model/best.pt")
+# Initialize crack detection model (dashboard)
+CRACK_MODEL_PATH = os.environ.get('CRACK_MODEL_PATH', os.path.join(BASE_DIR, 'model', 'crack.pt'))
+detector = CrackDetector(CRACK_MODEL_PATH)
 
 app.detector = detector
 
@@ -42,8 +51,92 @@ app.latest_status = "Idle"
 app.latest_frame_jpeg = None
 app.detection_enabled = True   # live detection is enabled by default
 
+# Pre-check (bogie underside verification) signals
+app.bogie_frame_ok = False
+app.bogie_message = "Initializing cameras..."
+app.bogie_auto_supported = False  # flips True if bogie verification model is loaded
+
+# Bogie verification model settings (used by /verify_image)
+
+# Precheck verification model (precheck page + upload verification)
+PRECHECK_MODEL_PATH = os.environ.get('PRECHECK_MODEL_PATH', os.path.join(BASE_DIR, 'model', 'precheck.pt'))
+
+BOGIE_VERIFY_CONF = float(os.environ.get('BOGIE_VERIFY_CONF', '0.60'))
+# Optional allowlist: comma-separated class names that count as "bogie verified"
+BOGIE_VERIFY_CLASSES = [
+    s.strip().lower() for s in os.environ.get('BOGIE_VERIFY_CLASSES', '').split(',') if s.strip()
+]
+
+def _build_bogie_verifier():
+    """Returns a callable verifier(image_path|np.ndarray) -> (ok: bool, best: dict|None)."""
+    if not ULTRALYTICS_AVAILABLE:
+        return None
+    if not os.path.exists(PRECHECK_MODEL_PATH):
+    	return None
+
+    try:
+    	model = YOLO(PRECHECK_MODEL_PATH)
+
+    except Exception as e:
+        print(f"Failed to load bogie model at {BOGIE_MODEL_PATH}: {e}")
+        return None
+
+    def verifier(source):
+        # source can be file path or numpy image
+        results = model.predict(source, verbose=False)
+        r = results[0]
+        best = None
+        ok = False
+
+        if hasattr(r, 'boxes') and r.boxes is not None and len(r.boxes) > 0:
+            boxes = r.boxes
+            xyxy = boxes.xyxy
+            confs = boxes.conf
+            clss = boxes.cls
+            # Convert to python lists if tensor-like
+            try:
+                confs_list = confs.tolist()
+                clss_list = clss.tolist()
+            except Exception:
+                confs_list = list(confs)
+                clss_list = list(clss)
+
+            for conf, cls in zip(confs_list, clss_list):
+                c = float(conf)
+                class_id = int(cls)
+                name = r.names[class_id] if hasattr(r, 'names') else str(class_id)
+                cand = {'name': str(name), 'conf': c, 'class_id': class_id}
+                if (best is None) or (c > best['conf']):
+                    best = cand
+
+            # Decide verification
+            if best is not None and best['conf'] >= BOGIE_VERIFY_CONF:
+                if not BOGIE_VERIFY_CLASSES:
+                    # No allowlist provided: accept any confident detection
+                    ok = True
+                else:
+                    ok = best['name'].lower() in BOGIE_VERIFY_CLASSES
+        return ok, best
+
+    # expose for routes
+    app.bogie_model = model
+    return verifier
+
+app.bogie_verifier = _build_bogie_verifier()
+if app.bogie_verifier is not None:
+    app.bogie_auto_supported = True
+    print(f"Bogie verification model loaded: {PRECHECK_MODEL_PATH}")
+else:
+    print("Bogie verification model not loaded (optional).")
+
 DETECT_EVERY = 3  # run detection every 3 frames for perf
 frame_counter = 0
+
+# Auto-save settings (saves detections to History automatically)
+AUTO_SAVE_ENABLED = True
+AUTO_SAVE_COOLDOWN_SEC = 5
+last_auto_save_ts = 0.0
+last_auto_save_sig = None
 
 # ---------------- Camera configuration ----------------
 cam0 = None
@@ -70,7 +163,7 @@ else:
     print("Skipping Picamera2 initialization (not available or in reloader).")
 
 def generate_frames():
-    global frame_counter
+    global frame_counter, last_auto_save_ts, last_auto_save_sig
     # combined width = FRAME_WIDTH * 2
     while True:
         frame_counter += 1
@@ -82,6 +175,25 @@ def generate_frames():
             frame = np.zeros((FRAME_HEIGHT, FRAME_WIDTH * 2, 3), dtype=np.uint8)
             cv2.putText(frame, "Waiting for frames...", (50, FRAME_HEIGHT // 2),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+
+        # --- Pre-check heuristic: confirm we are seeing a real, focused scene ---
+        # (Fallback until you train a dedicated bogie-underside classifier.)
+        try:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # Focus / texture score
+            focus_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            # Non-black pixel ratio (helps detect "lens cap" / empty frames)
+            non_black = float(np.mean(gray > 15))
+            # Tuned to be permissive; adjust if your environment is dark
+            frame_ok = (focus_score > 40.0) and (non_black > 0.10)
+            app.bogie_frame_ok = bool(frame_ok)
+            if frame_ok:
+                app.bogie_message = "Scene detected. If this is the underside of a train bogie, press Continue."
+            else:
+                app.bogie_message = "Searching for bogie underside... (check lighting / camera position)"
+        except Exception:
+            app.bogie_frame_ok = False
+            app.bogie_message = "Initializing..."
 
         # Run detection only every Nth frame to save CPU
         if app.detection_enabled and frame_counter % DETECT_EVERY == 0:
@@ -141,14 +253,46 @@ def generate_frames():
         if ret:
             app.latest_frame_jpeg = buffer.tobytes()
 
+        # --- Auto-save to History when cracks are detected ---
+        if (
+            AUTO_SAVE_ENABLED
+            and app.detection_enabled
+            and len(detections_list) > 0
+            and ret
+        ):
+            now = time.time()
+            crack_sig = tuple(sorted([d.get('name', '') for d in detections_list]))
+            if (now - last_auto_save_ts) >= AUTO_SAVE_COOLDOWN_SEC and crack_sig != last_auto_save_sig:
+                try:
+                    fname = f"autosave_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
+                    out_path = os.path.join(app.config['UPLOAD_FOLDER'], fname)
+                    with open(out_path, 'wb') as f:
+                        f.write(buffer.tobytes())
+
+                    with app.app_context():
+                        for det in detections_list:
+                            new_det = Detection(
+                                image_filename=fname,
+                                crack_type=det.get('name', 'unknown'),
+                                confidence=det.get('confidence', 0.0),
+                                recommendation=app.latest_recommendation,
+                                status=app.latest_status,
+                            )
+                            db.session.add(new_det)
+                        db.session.commit()
+
+                    last_auto_save_ts = now
+                    last_auto_save_sig = crack_sig
+                except Exception as e:
+                    print("Auto-save error:", e)
+
         yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n'
 
 @app.route("/toggle_detection", methods=["POST"])
 def toggle_detection():
     """Toggle real-time crack detection."""
-    global DETECTION_ENABLED
-    DETECTION_ENABLED = not DETECTION_ENABLED
-    return jsonify({"detection_enabled": DETECTION_ENABLED})
+    app.detection_enabled = not getattr(app, "detection_enabled", True)
+    return jsonify({"detection_enabled": app.detection_enabled})
 
 @app.route("/video_feed")
 def video_feed():

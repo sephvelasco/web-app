@@ -20,12 +20,12 @@
 ### Setup for Different Operating Systems
 | **LINUX SETUP** | **WINDOWS SETUP** |
 |---------------------------------|------------------------------------|
-|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to web-app-main<br>5. Execute Shell Script `./setup_lin.sh`|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to web-app-main<br>5. Execute Shell Script `./setup_win.bat`|
+|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to web-app-main<br>5. Execute Install Script `sudo bash install.sh`<br>6. Execute Run Script `./run.sh`|1. Download Repository<br>2. Extract Files<br>3. Open Terminal<br>4. Change Directory to web-app-main<br>5. Execute Shell Script `./setup_win.bat`|
 
 
 |Possible Errors| Fixes |
 |---------------|-------|
-|`bad interpreter: No such file or directory`<br><br>`cannot execute: required file not found`|1. `sudo apt install dos2unix`<br>2. `dos2unix setup_lin.sh`|
+|`bad interpreter: No such file or directory`<br><br>`cannot execute: required file not found`|1. `sudo apt install dos2unix`<br>2. `dos2unix install.sh`|
 |`bash: ./setup_lin.sh: Permission denied`|`sudo chmod +x setup_lin.sh`|
 
 ## Links
