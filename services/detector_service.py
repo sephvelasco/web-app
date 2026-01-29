@@ -1,59 +1,90 @@
-from ultralytics import YOLO
+import os
 import cv2
 
 class CrackDetector:
-
-    def __init__(self, model_path):
+    def __init__(self, model_path: str):
+        self.model = None
+        self.model_path = model_path
 
         try:
-            self.model = YOLO(model_path)
-            print("Model loaded successfully.")
+            from ultralytics import YOLO
         except Exception as e:
-            print(f"Error loading model: {e}")
+            print(f"Ultralytics not available. Install dependencies. Details: {e}")
+            return
+
+        try:
+            if not os.path.exists(model_path):
+                print(f"Crack model not found: {model_path}")
+                return
+
+            self.model = YOLO(model_path)
+            print(f"Crack model loaded successfully: {model_path}")
+        except Exception as e:
+            print(f"Error loading crack model ({model_path}): {e}")
             self.model = None
 
-    def predict(self, image_path):
+    def predict(self, image_path: str):
+        """Predict on an image path and return a list of detections."""
         if self.model is None:
-            print("Model is not loaded. Cannot perform prediction.")
             return []
 
         try:
-            # Perform prediction
-            results = self.model.predict(image_path, verbose=False) 
-            
-            # Process results
-            detections = []
-            result = results[0]
-            class_names = result.names
+            results = self.model.predict(image_path, verbose=False)
+            return self._extract_detections(results)
+        except Exception as e:
+            print(f"Prediction error (image): {e}")
+            return []
 
-            if result.boxes is not None:
-                for box in result.boxes:
-                    class_id = int(box.cls[0])
-                    confidence = float(box.conf[0])
-                    detections.append({
-                        'name': class_names[class_id],
-                        'confidence': round(confidence, 2)
-                    })
+    def predict_on_frame(self, frame_bgr):
+        """
+        Predict directly on a BGR frame (numpy array).
+        Returns:
+          detections_list: list[dict] with name/confidence/bbox
+          annotated_frame: frame with boxes drawn
+        """
+        if self.model is None:
+            return [], frame_bgr
 
-            print("DETECTIONS:", detections)
+        try:
+            results = self.model.predict(source=frame_bgr, verbose=False)
+            detections = self._extract_detections(results)
+            annotated = results[0].plot()  # draws boxes
+            return detections, annotated
+        except Exception as e:
+            print(f"Prediction error (frame): {e}")
+            return [], frame_bgr
+
+    @staticmethod
+    def _extract_detections(results):
+        """Convert Ultralytics results -> list of {name, confidence, bbox}."""
+        detections = []
+        if not results:
             return detections
 
-        except Exception as e:
-            print(f"An error occurred during prediction: {e}")
-            return []
-        
-    def predict_frame(self, frame):
-        """
-        Performs YOLO inference directly on a live frame (BGR image).
-        Returns the same frame with bounding boxes drawn.
-        """
-        if self.model is None:
-            return frame
+        r = results[0]
+        names = getattr(r, "names", {})
 
-        try:
-            results = self.model.predict(source=frame, verbose=False)
-            annotated = results[0].plot()  # Draw bounding boxes
-            return annotated
-        except Exception as e:
-            print(f"Error during live detection: {e}")
-            return frame
+        if hasattr(r, "boxes") and r.boxes is not None and len(r.boxes) > 0:
+            boxes = r.boxes
+
+            # Robust conversion whether tensor or list
+            try:
+                xyxy = boxes.xyxy.cpu().numpy()
+                confs = boxes.conf.cpu().numpy()
+                clss = boxes.cls.cpu().numpy()
+            except Exception:
+                xyxy = boxes.xyxy
+                confs = boxes.conf
+                clss = boxes.cls
+
+            for bb, conf, cls in zip(xyxy, confs, clss):
+                x1, y1, x2, y2 = map(int, bb[:4])
+                class_id = int(cls)
+                name = names.get(class_id, str(class_id))
+                detections.append({
+                    "name": str(name),
+                    "confidence": float(conf),
+                    "bbox": [x1, y1, x2, y2]
+                })
+
+        return detections
