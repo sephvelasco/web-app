@@ -25,7 +25,7 @@
 
 |Possible Errors| Fixes |
 |---------------|-------|
-|`bad interpreter: No such file or directory`<br><br>`cannot execute: required file not found`|1. `sudo apt install dos2unix`<br>2. `dos2unix setup_lin.sh`|
+|`bad interpreter: No such file or directory`<br><br>`cannot execute: required file not found`|1. `sudo apt install dos2unix`<br>2. `dos2unix install.sh`|
 |`bash: ./setup_lin.sh: Permission denied`|`sudo chmod +x setup_lin.sh`|
 
 ## Links
