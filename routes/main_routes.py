@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, current_app, session, redirect, url_for
 from werkzeug.utils import secure_filename
 import os
-from services.detector_service import CrackDetector
 from models import db
 from models.detection import Detection
 from datetime import datetime
@@ -19,6 +18,7 @@ def require_bogie_verification():
         '/set_verified',
         '/verify_image',
         '/video_feed',
+        '/usb_video_feed',
         '/live_status',
         '/history',
     }
@@ -58,7 +58,11 @@ def bogie_check():
     If you later add a dedicated 'bogie underside' classifier model, you can replace
     the heuristic inside app.py and return a real confidence score.
     """
-    # These values are set in app.py during live capture
+    # Keep precheck lightweight: app.py maintains bogie status from the USB camera
+    helper = getattr(current_app, 'update_bogie_status_from_usb', None)
+    if callable(helper):
+        helper()
+
     return jsonify({
         'auto_supported': bool(getattr(current_app, 'bogie_auto_supported', False)),
         'frame_ok': bool(getattr(current_app, 'bogie_frame_ok', False)),

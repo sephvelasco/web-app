@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, Response, current_ap
 from werkzeug.utils import secure_filename
 from models import db
 from services.detector_service import CrackDetector
+from services.usb_camera import USBCamera, discover_usb_video_device
 from models.detection import Detection
 from routes.main_routes import main_bp
 from datetime import datetime
@@ -61,6 +62,13 @@ app.bogie_auto_supported = False  # flips True if bogie verification model is lo
 # Precheck verification model (precheck page + upload verification)
 PRECHECK_MODEL_PATH = os.environ.get('PRECHECK_MODEL_PATH', os.path.join(BASE_DIR, 'model', 'precheck.pt'))
 
+# USB camera for bogie verification (Logitech C270 or similar)
+USB_VERIFY_DEVICE = os.environ.get('USB_VERIFY_DEVICE', '/dev/video16')
+USB_VERIFY_WIDTH = int(os.environ.get('USB_VERIFY_WIDTH', '640'))
+USB_VERIFY_HEIGHT = int(os.environ.get('USB_VERIFY_HEIGHT', '480'))
+USB_VERIFY_FPS = int(os.environ.get('USB_VERIFY_FPS', '15'))
+USB_VERIFY_MJPEG = os.environ.get('USB_VERIFY_MJPEG', '1') != '0'
+
 BOGIE_VERIFY_CONF = float(os.environ.get('BOGIE_VERIFY_CONF', '0.60'))
 # Optional allowlist: comma-separated class names that count as "bogie verified"
 BOGIE_VERIFY_CLASSES = [
@@ -72,13 +80,13 @@ def _build_bogie_verifier():
     if not ULTRALYTICS_AVAILABLE:
         return None
     if not os.path.exists(PRECHECK_MODEL_PATH):
-    	return None
+        return None
 
     try:
-    	model = YOLO(PRECHECK_MODEL_PATH)
+        model = YOLO(PRECHECK_MODEL_PATH)
 
     except Exception as e:
-        print(f"Failed to load bogie model at {BOGIE_MODEL_PATH}: {e}")
+        print(f"Failed to load precheck model at {PRECHECK_MODEL_PATH}: {e}")
         return None
 
     def verifier(source):
@@ -141,6 +149,7 @@ last_auto_save_sig = None
 # ---------------- Camera configuration ----------------
 cam0 = None
 cam1 = None
+usb_cam = None
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 is_picamera_initialized = False
@@ -162,6 +171,102 @@ if PICAMERA_AVAILABLE and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
 else:
     print("Skipping Picamera2 initialization (not available or in reloader).")
 
+# Initialize USB verification camera (avoid double-open under Flask reloader)
+if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+    try:
+        # Try preferred device first; if it fails, auto-discover a usable /dev/videoX.
+        preferred = USB_VERIFY_DEVICE
+        chosen = discover_usb_video_device(preferred=preferred, max_index=30)
+        if chosen is None:
+            raise RuntimeError(
+                f"No usable /dev/videoX found (preferred was {preferred}). "
+                "Try: v4l2-ctl --list-devices"
+            )
+
+        usb_cam = USBCamera(
+            device=chosen,
+            width=USB_VERIFY_WIDTH,
+            height=USB_VERIFY_HEIGHT,
+            fps=USB_VERIFY_FPS,
+            use_mjpeg=USB_VERIFY_MJPEG,
+        )
+        print(f"USB verification camera initialized: {chosen}")
+    except Exception as e:
+        usb_cam = None
+        print(f"USB verification camera not available: {e}")
+
+
+def update_bogie_status_from_usb():
+    """Update app.bogie_frame_ok/app.bogie_message using USB camera + precheck model.
+
+    This is called from the /bogie_check route to keep precheck lightweight.
+    """
+    if usb_cam is None:
+        app.bogie_frame_ok = False
+        app.bogie_message = "USB verification camera not available."
+        return
+
+    ret, frame = usb_cam.read()
+    if not ret or frame is None:
+        app.bogie_frame_ok = False
+        app.bogie_message = "Reading USB verification camera..."
+        return
+
+    # Prefer model-based verification when available
+    verifier = getattr(app, 'bogie_verifier', None)
+    if verifier is not None:
+        try:
+            ok, best = verifier(frame)
+            app.bogie_frame_ok = bool(ok)
+            if ok and best:
+                app.bogie_message = f"Bogie verified: {best['name']} ({best['conf']:.2f})"
+            else:
+                app.bogie_message = "Searching for train bogie..."
+            return
+        except Exception as e:
+            app.bogie_frame_ok = False
+            app.bogie_message = f"Precheck model error: {e}"
+            return
+
+    # Fallback heuristic if model not loaded
+    try:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        focus_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        non_black = float(np.mean(gray > 15))
+        frame_ok = (focus_score > 40.0) and (non_black > 0.10)
+        app.bogie_frame_ok = bool(frame_ok)
+        app.bogie_message = "Scene detected. Press Continue." if frame_ok else "Searching for train bogie..."
+    except Exception:
+        app.bogie_frame_ok = False
+        app.bogie_message = "Initializing..."
+
+
+def generate_usb_frames():
+    """MJPEG stream from USB verification camera for the precheck page."""
+    while True:
+        try:
+            if usb_cam is None:
+                frame = np.zeros((USB_VERIFY_HEIGHT, USB_VERIFY_WIDTH, 3), dtype=np.uint8)
+                cv2.putText(frame, "USB verification camera not available", (20, 40),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            else:
+                ret, frame = usb_cam.read()
+                if not ret or frame is None:
+                    frame = np.zeros((USB_VERIFY_HEIGHT, USB_VERIFY_WIDTH, 3), dtype=np.uint8)
+                    cv2.putText(frame, "Reading USB camera...", (20, 40),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+
+            ok, buffer = cv2.imencode('.jpg', frame)
+            if not ok:
+                time.sleep(0.02)
+                continue
+
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+        except Exception:
+            time.sleep(0.05)
+            continue
+
 def generate_frames():
     global frame_counter, last_auto_save_ts, last_auto_save_sig
     # combined width = FRAME_WIDTH * 2
@@ -176,24 +281,8 @@ def generate_frames():
             cv2.putText(frame, "Waiting for frames...", (50, FRAME_HEIGHT // 2),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
-        # --- Pre-check heuristic: confirm we are seeing a real, focused scene ---
-        # (Fallback until you train a dedicated bogie-underside classifier.)
-        try:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            # Focus / texture score
-            focus_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-            # Non-black pixel ratio (helps detect "lens cap" / empty frames)
-            non_black = float(np.mean(gray > 15))
-            # Tuned to be permissive; adjust if your environment is dark
-            frame_ok = (focus_score > 40.0) and (non_black > 0.10)
-            app.bogie_frame_ok = bool(frame_ok)
-            if frame_ok:
-                app.bogie_message = "Scene detected. If this is the underside of a train bogie, press Continue."
-            else:
-                app.bogie_message = "Searching for bogie underside... (check lighting / camera position)"
-        except Exception:
-            app.bogie_frame_ok = False
-            app.bogie_message = "Initializing..."
+        # NOTE: Bogie precheck is now driven by the USB verification camera.
+        # The CSI cameras are dedicated to crack detection and dashboard streaming.
 
         # Run detection only every Nth frame to save CPU
         if app.detection_enabled and frame_counter % DETECT_EVERY == 0:
@@ -298,6 +387,11 @@ def toggle_detection():
 def video_feed():
     return Response(generate_frames(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
+
+@app.route("/usb_video_feed")
+def usb_video_feed():
+    return Response(generate_usb_frames(), mimetype="multipart/x-mixed-replace; boundary=frame")
+
 @app.route('/live_status')
 def live_status():
     # return latest info for dashboard polling
@@ -346,19 +440,29 @@ def capture():
 
 @atexit.register
 def cleanup():
-    global cam0, cam1
+    global cam0, cam1, usb_cam
     if PICAMERA_AVAILABLE and is_picamera_initialized:
         try:
             cam0.stop()
             cam1.stop()
-            print("Cameras stopped cleanly.")
+            print("CSI cameras stopped cleanly.")
         except Exception as e:
             print(f"Error stopping cameras: {e}")
+
+    if usb_cam is not None:
+        try:
+            usb_cam.release()
+            print("USB verification camera released cleanly.")
+        except Exception as e:
+            print(f"Error releasing USB camera: {e}")
 
 with app.app_context():
     db.create_all()
 
 app.register_blueprint(main_bp)
+
+# Expose helper for blueprint routes
+app.update_bogie_status_from_usb = update_bogie_status_from_usb
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", threaded=True)
