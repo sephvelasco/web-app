@@ -167,19 +167,25 @@ def upload_image():
 
 @main_bp.route('/history')
 def history():
+    """Return detection history grouped by saved image (one card per image)."""
     records = Detection.query.order_by(Detection.timestamp.desc()).all()
     grouped = {}
     for det in records:
-        if det.image_filename not in grouped:
-            grouped[det.image_filename] = {
-                'filename': det.image_filename,
-                'image_url': f'/static/uploads/{det.image_filename}',
-                'timestamp': det.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+        key = det.image_filename
+        if key not in grouped:
+            grouped[key] = {
+                'filename': key,
+                'image_url': f'/static/uploads/{key}',
+                'timestamp': det.timestamp.strftime('%Y-%m-%d %H:%M:%S') if det.timestamp else '',
+                # These are per-image summaries (we keep the first/latest row's values)
+                'status': det.status or '',
+                'recommendation': det.recommendation or '',
                 'detections': []
             }
-        grouped[det.image_filename]['detections'].append({
+
+        grouped[key]['detections'].append({
             'crack_type': det.crack_type,
-            'confidence': round(det.confidence * 100, 1)
+            'confidence': round(float(det.confidence) * 100, 1)
         })
 
     return jsonify(list(grouped.values()))
