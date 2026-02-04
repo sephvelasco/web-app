@@ -1,49 +1,72 @@
 document.addEventListener("DOMContentLoaded", () => {
   const sidebar = document.getElementById("sidebar");
   const toggleBtn = document.getElementById("sidebarToggle");
+
   const dashboardTab = document.getElementById("dashboardTab");
+  const historyTab = document.getElementById("historyTab");
+  const liveFeedTab = document.getElementById("liveFeedTab"); // optional if present
 
-  toggleBtn.addEventListener("click", () => {
-    const isCollapsed = sidebar.classList.contains("collapsed");
+  const dashboardView = document.getElementById("dashboardView");
+  const historyView = document.getElementById("historyView");
+  const liveFeedView = document.getElementById("liveFeedView");
 
-    if (isCollapsed) {
-      sidebar.classList.remove("collapsed");
-      toggleBtn.classList.add("open");
-    } else {
-      sidebar.classList.add("collapsed");
-      toggleBtn.classList.remove("open");
-    }
+  function setActiveTab(tabEl) {
+    document.querySelectorAll(".nav-tab").forEach((li) => li.classList.remove("active"));
+    if (tabEl) tabEl.classList.add("active");
+  }
 
-    window.dispatchEvent(new Event("sidebarToggled"));
-  });
+  function showOnly(viewEl) {
+    if (dashboardView) dashboardView.style.display = "none";
+    if (historyView) historyView.style.display = "none";
+    if (liveFeedView) liveFeedView.style.display = "none";
+    if (viewEl) viewEl.style.display = "block";
+  }
 
-  dashboardTab.addEventListener("click", () => {
-    // Manage Active Tabs
-    document
-      .querySelectorAll(".nav-tab")
-      .forEach((li) => li.classList.remove("active"));
-    dashboardTab.classList.add("active");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      const isCollapsed = sidebar.classList.contains("collapsed");
+      if (isCollapsed) {
+        sidebar.classList.remove("collapsed");
+        toggleBtn.classList.add("open");
+      } else {
+        sidebar.classList.add("collapsed");
+        toggleBtn.classList.remove("open");
+      }
+      window.dispatchEvent(new Event("sidebarToggled"));
+    });
+  }
 
-    // Toggle View Visibility back to the dashboard
-    document.getElementById("historyView").style.display = "none";
-    document.getElementById("liveFeedView").style.display = "none";
-    document.getElementById("dashboardView").style.display = "block";
-  });
+  if (dashboardTab) {
+    dashboardTab.addEventListener("click", () => {
+      setActiveTab(dashboardTab);
+      showOnly(dashboardView);
 
-  // Force reflow fix to eliminate gap when returning to Dashboard
-  document.getElementById("dashboardTab").addEventListener("click", () => {
-    const dashboardView = document.getElementById("dashboardView");
-    const viewerArea = dashboardView.querySelector(".viewer-area");
+      // Force reflow fix to eliminate gap when returning to Dashboard
+      const viewerArea = dashboardView?.querySelector(".viewer-area");
+      if (viewerArea) {
+        requestAnimationFrame(() => {
+          viewerArea.style.minHeight = "0";
+          viewerArea.getBoundingClientRect();
+          viewerArea.style.minHeight = "auto";
+          window.dispatchEvent(new Event("resize"));
+        });
+      }
+    });
+  }
 
-    if (viewerArea) {
-      // Wait for browser to finish showing the dashboard
-      requestAnimationFrame(() => {
-        viewerArea.style.minHeight = "0";
-        viewerArea.getBoundingClientRect();
-        viewerArea.style.minHeight = "auto";
+  if (historyTab) {
+    historyTab.addEventListener("click", () => {
+      setActiveTab(historyTab);
+      showOnly(historyView);
+      window.dispatchEvent(new Event("historyViewShown"));
+    });
+  }
 
-        window.dispatchEvent(new Event("resize"));
-      });
-    }
-  });
+  // Optional support if you add a live feed nav tab later
+  if (liveFeedTab) {
+    liveFeedTab.addEventListener("click", () => {
+      setActiveTab(liveFeedTab);
+      showOnly(liveFeedView);
+    });
+  }
 });

@@ -314,6 +314,10 @@ def generate_frames():
             except Exception as e:
                 print("Detection error:", e)
                 detections_list = []
+
+            # Ignore 'normal' class if your model includes it
+            detections_list = [d for d in detections_list if str(d.get('name','')).lower() != 'normal']
+
         else:
             # Keep last detections if not running detection this frame
             detections_list = app.latest_detections
