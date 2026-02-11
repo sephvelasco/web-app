@@ -1,151 +1,148 @@
-const msgEl = document.getElementById("precheckMessage");
-const hintEl = document.getElementById("precheckHint");
+let liveVerified = false;
+let uploadVerified = false;
+
+// Elements
+const liveClassText = document.getElementById("liveClassText");
+const uploadClassText = document.getElementById("uploadClassText");
 const continueBtn = document.getElementById("continueBtn");
 const refreshBtn = document.getElementById("refreshBtn");
 
 const verifyFile = document.getElementById("verifyFile");
 const verifyBtn = document.getElementById("verifyBtn");
-const verifyPreview = document.getElementById("verifyPreview");
-const verifyResult = document.getElementById("verifyResult");
 
-let pollHandle = null;
-let uploadVerified = false;
+const uploadPreviewImg = document.getElementById("uploadPreviewImg");
+const uploadPlaceholder = document.getElementById("uploadPlaceholder");
 
-async function pollPrecheck() {
+function setContinueEnabled() {
+  continueBtn.disabled = !(liveVerified || uploadVerified);
+}
+
+// ---- Live poll (USB camera verification) ----
+// Expecting /bogie_check to return JSON like:
+// { verified: bool, message: str, best: {name, conf} }  (best optional)
+async function pollLive() {
   try {
-    const res = await fetch("/bogie_check");
-    if (!res.ok) return;
+    const res = await fetch("/bogie_check", { cache: "no-store" });
     const data = await res.json();
 
-    if (data.verified) {
-      // Already verified -> go straight to dashboard
-      window.location.href = "/dashboard";
-      return;
-    }
+    liveVerified = !!(data.verified || data.frame_ok);
 
-    msgEl.textContent = data.message || "Scanning...";
-
-    // If we have a dedicated classifier in the future, auto_supported will flip True.
-    if (data.auto_supported) {
-      hintEl.textContent = "Auto-verification enabled.";
+    // Show classification only (no "Status:" label)
+    // Prefer best.name/conf if server provides it; fallback to message
+    if (data.best && data.best.name) {
+      const conf = typeof data.best.conf === "number" ? data.best.conf.toFixed(2) : data.best.conf;
+      liveClassText.textContent = `${data.best.name} (${conf})`;
+    } else if (data.message) {
+      liveClassText.textContent = data.message;
     } else {
-      hintEl.textContent =
-        "Auto-verification model not installed. The system will enable Continue once the cameras see a valid scene.";
+      liveClassText.textContent = liveVerified ? "Verified" : "Searching...";
     }
 
-    // Continue can be enabled by live precheck OR by uploaded image verification
-    continueBtn.disabled = !(data.frame_ok || uploadVerified);
+    setContinueEnabled();
   } catch (e) {
-    console.error("Precheck poll error", e);
+    liveClassText.textContent = "Live verification unavailable.";
+    liveVerified = false;
+    setContinueEnabled();
   }
 }
 
-function startPolling() {
-  if (pollHandle) return;
-  pollPrecheck();
-  pollHandle = setInterval(pollPrecheck, 800);
-}
+// Run poll continuously
+setInterval(pollLive, 700);
+pollLive();
 
-async function setVerified() {
-  continueBtn.disabled = true;
-  continueBtn.textContent = "Continuing...";
-  try {
-    const res = await fetch("/set_verified", { method: "POST" });
-    const data = await res.json();
-    if (data.verified) {
-      window.location.href = "/dashboard";
-    } else {
-      alert("Unable to continue. Please try again.");
-    }
-  } catch (e) {
-    console.error("set_verified error", e);
-    alert("Unable to continue. Please try again.");
-  } finally {
-    continueBtn.textContent = "Continue";
-  }
-}
-
-continueBtn.addEventListener("click", setVerified);
-refreshBtn.addEventListener("click", () => {
-  pollPrecheck();
-});
-
-function showPreview(file) {
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  verifyPreview.src = url;
-  verifyPreview.style.display = "block";
-}
-
-async function verifyUploadedImage() {
-  const file = verifyFile.files && verifyFile.files[0];
-  if (!file) {
-    alert("Please choose an image first.");
-    return;
-  }
-
-  verifyBtn.disabled = true;
-  verifyBtn.textContent = "Verifying...";
-  verifyResult.textContent = "";
-
-  try {
-    const form = new FormData();
-    form.append("file", file);
-
-    const res = await fetch("/verify_image", {
-      method: "POST",
-      body: form,
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      verifyResult.textContent = data.error || "Unable to verify image.";
-      uploadVerified = false;
-      return;
-    }
-
-    if (data.verified) {
-      uploadVerified = true;
-      const best = data.best;
-      if (best && best.name) {
-        verifyResult.textContent = `Verified: ${best.name} (conf ${Math.round(best.conf * 100)}%)`;
-      } else {
-        verifyResult.textContent = "Verified.";
-      }
-      // Once verified, proceed immediately
-      window.location.href = "/dashboard";
-      return;
-    } else {
-      uploadVerified = false;
-      const best = data.best;
-      if (best && best.name) {
-        verifyResult.textContent = `Not verified. Best match: ${best.name} (conf ${Math.round(best.conf * 100)}%)`;
-      } else {
-        verifyResult.textContent = "Not verified. Please try another image.";
-      }
-    }
-  } catch (e) {
-    console.error("verify_image error", e);
-    verifyResult.textContent = "Unable to verify image. Please try again.";
-    uploadVerified = false;
-  } finally {
-    verifyBtn.textContent = "Verify Image";
-    verifyBtn.disabled = false;
-    pollPrecheck();
-  }
-}
-
+// ---- Upload preview ----
 if (verifyFile) {
   verifyFile.addEventListener("change", () => {
+    const f = verifyFile.files && verifyFile.files[0];
     uploadVerified = false;
-    verifyResult.textContent = "";
-    showPreview(verifyFile.files && verifyFile.files[0]);
-    pollPrecheck();
+    setContinueEnabled();
+
+    if (!f) {
+      uploadClassText.textContent = "Upload an image to verify.";
+      uploadPreviewImg.style.display = "none";
+      uploadPlaceholder.style.display = "block";
+      return;
+    }
+
+    const url = URL.createObjectURL(f);
+    uploadPreviewImg.src = url;
+    uploadPreviewImg.style.display = "block";
+    uploadPlaceholder.style.display = "none";
+    uploadClassText.textContent = "Ready to verify.";
   });
 }
 
+// ---- Upload verify ----
+// Expecting /verify_image to return JSON like:
+// { ok: bool, best: {name, conf}, message?: str }
 if (verifyBtn) {
-  verifyBtn.addEventListener("click", verifyUploadedImage);
+  verifyBtn.addEventListener("click", async () => {
+    const f = verifyFile.files && verifyFile.files[0];
+    if (!f) {
+      uploadClassText.textContent = "Please choose an image first.";
+      return;
+    }
+
+    uploadClassText.textContent = "Verifying...";
+    uploadVerified = false;
+    setContinueEnabled();
+
+    try {
+      const form = new FormData();
+      form.append("file", f);
+
+      const res = await fetch("/verify_image", {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json();
+
+      uploadVerified = !!data.ok;
+
+      if (data.best && data.best.name) {
+        const conf = typeof data.best.conf === "number" ? data.best.conf.toFixed(2) : data.best.conf;
+        uploadClassText.textContent = `${data.best.name} (${conf})`;
+      } else if (data.message) {
+        uploadClassText.textContent = data.message;
+      } else {
+        uploadClassText.textContent = uploadVerified ? "Verified" : "Not verified";
+      }
+
+      // IMPORTANT: do NOT auto-continue
+      setContinueEnabled();
+    } catch (e) {
+      uploadClassText.textContent = "Upload verification failed.";
+      uploadVerified = false;
+      setContinueEnabled();
+    }
+  });
 }
 
-startPolling();
+// ---- Refresh button ----
+if (refreshBtn) {
+  refreshBtn.addEventListener("click", () => {
+    // Force refresh the live feed image (cache-bust)
+    const liveImg = document.getElementById("liveFeed");
+    if (liveImg) {
+      const base = "/usb_video_feed";
+      liveImg.src = `${base}?t=${Date.now()}`;
+    }
+    pollLive();
+  });
+}
+
+// ---- Continue button ----
+// Only proceeds when you click Continue (even if upload verification passed)
+if (continueBtn) {
+  continueBtn.addEventListener("click", async () => {
+    if (!(liveVerified || uploadVerified)) return;
+
+    // If your backend uses /set_verified to set session:
+    try {
+      await fetch("/set_verified", { method: "POST" });
+    } catch (e) {
+      // even if this fails, try to go dashboard (in some setups it still works)
+    }
+    window.location.href = "/dashboard";
+  });
+}
