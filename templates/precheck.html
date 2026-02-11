@@ -3,159 +3,228 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bogie Underside Verification</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
-    />
+    <title>Train Bogie Frame Verification</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+
     <style>
-      .precheck-wrap {
+      :root { --client-blue: #214390; }
+
+      body { background: #f6f8fc; }
+
+      .precheck-page {
         min-height: 100vh;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
+        flex-direction: column;
       }
-      .precheck-card {
-        width: min(1000px, 100%);
+
+      /* Header */
+      .precheck-header {
+        background: var(--client-blue);
+        color: #fff;
+        height: 110px;
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        gap: 22px;
+      }
+      .precheck-header .logo-wrap {
+        width: 76px;
+        height: 76px;
         background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
         overflow: hidden;
       }
-      .precheck-header {
-        padding: 16px 20px;
-        background: #214390;
-        color: #fff;
-      }
-      .precheck-body {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 16px;
-        padding: 16px;
-      }
-      .precheck-video {
-        width: 100%;
-        border-radius: 8px;
-        border: 3px solid #214390;
-      }
-      .precheck-side {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .precheck-msg {
-        padding: 12px;
-        background: #f5f6fa;
-        border-radius: 8px;
-      }
-      .precheck-actions {
-        display: flex;
-        gap: 10px;
-      }
-      .upload-box {
-        padding: 12px;
-        background: #f5f6fa;
-        border-radius: 8px;
-        border: 1px dashed rgba(25, 25, 112, 0.35);
-      }
-      .upload-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-        margin-top: 10px;
-      }
-      .upload-preview {
-        width: 100%;
-        max-height: 220px;
+      .precheck-header img {
+        width: 76px;
+        height: 76px;
         object-fit: contain;
-        border-radius: 8px;
-        border: 2px solid rgba(25, 25, 112, 0.35);
+      }
+      .precheck-header h1 {
+        font-size: 44px;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: 0.5px;
+      }
+
+      /* Main layout */
+      .precheck-content {
+        flex: 1;
+        padding: 24px 28px 30px;
+      }
+      .precheck-grid {
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        gap: 18px;
+        align-items: start;
+      }
+
+      /* Panels */
+      .panel {
         background: #fff;
-        display: none;
+        border: 3px solid var(--client-blue);
+        border-radius: 4px;
+        overflow: hidden;
       }
-      .btn-primary {
-        padding: 10px 14px;
-        background: #214390;
+      .panel-body {
+        padding: 14px;
+      }
+
+      .live-frame {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        display: grid;
+        place-items: center;
+      }
+      .live-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .class-bar {
+        background: var(--client-blue);
         color: #fff;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
+        padding: 14px 16px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 18px;
       }
-      .btn-primary:disabled {
+
+      /* Right side upload panel */
+      .upload-head {
+        background: #d9d9d9;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 3px solid var(--client-blue);
+      }
+      .upload-head .title {
+        font-weight: 700;
+        font-size: 20px;
+        color: #111;
+      }
+      .upload-head .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .btn {
+        border: 2px solid var(--client-blue);
+        background: #fff;
+        color: var(--client-blue);
+        padding: 8px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .btn.primary {
+        background: var(--client-blue);
+        color: #fff;
+      }
+      .btn:disabled {
         opacity: 0.55;
         cursor: not-allowed;
       }
-      .btn-outline {
-        padding: 10px 14px;
-        background: transparent;
-        color: #214390;
-        border: 2px solid #214390;
-        border-radius: 8px;
-        cursor: pointer;
+
+      .upload-preview {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        background: #000;
+        display: grid;
+        place-items: center;
       }
-      @media (max-width: 820px) {
-        .precheck-body {
-          grid-template-columns: 1fr;
-        }
+      .upload-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .upload-footer {
+        padding: 14px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .hint-row {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #555;
+      }
+
+      /* Responsive */
+      @media (max-width: 1050px) {
+        .precheck-header h1 { font-size: 32px; }
+        .precheck-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
 
   <body>
-    <div class="precheck-wrap">
-      <div class="precheck-card">
-        <div class="precheck-header">
-          <h2 style="margin: 0">Bogie Underside Verification</h2>
-          <p style="margin: 6px 0 0; opacity: 0.95">
-            Before scanning for cracks, the system confirms the cameras are aligned to the underside of the train bogie.
-          </p>
+    <div class="precheck-page">
+      <!-- Header -->
+      <header class="precheck-header">
+        <div class="logo-wrap">
+          <img src="{{ url_for('static', filename='images/lrmc_logo.png') }}" alt="Client Logo" />
         </div>
+        <h1>Train Bogie Frame Verification</h1>
+      </header>
 
-        <div class="precheck-body">
-          <div>
-            <img class="precheck-video" src="/usb_video_feed" alt="Verification Camera Feed" />
-          </div>
-
-          <div class="precheck-side">
-            <div class="precheck-msg">
-              <h3 style="margin: 0 0 6px">Status</h3>
-              <p id="precheckMessage" style="margin: 0">Initializing...</p>
-              <p id="precheckHint" style="margin: 8px 0 0; font-size: 0.92rem; opacity: 0.8">
-                Tip: turn on lighting under the bogie for faster verification.
-              </p>
+      <!-- Body -->
+      <main class="precheck-content">
+        <div class="precheck-grid">
+          <!-- LEFT: Live camera -->
+          <section class="panel">
+            <div class="live-frame">
+              <!-- USB precheck feed -->
+              <img id="liveFeed" src="/usb_video_feed" alt="Live Camera Feed" />
             </div>
+            <!-- No "Status" label, just classification text -->
+            <div class="class-bar" id="liveClassText">Initializing...</div>
+          </section>
 
-            <div class="upload-box">
-              <h3 style="margin: 0 0 6px">Verify using an image (optional)</h3>
-              <p style="margin: 0; font-size: 0.92rem; opacity: 0.85">
-                If the verification camera is unavailable, you can upload a photo of the bogie underside/area to verify.
-              </p>
-              <div class="upload-row">
+          <!-- RIGHT: Image verification -->
+          <section class="panel">
+            <div class="upload-head">
+              <div class="title">Image Verification</div>
+              <div class="controls">
                 <input id="verifyFile" type="file" accept="image/*" />
-                <button id="verifyBtn" class="btn-outline" type="button">Verify Image</button>
+                <button id="verifyBtn" class="btn" type="button">Verify</button>
               </div>
-              <img id="verifyPreview" class="upload-preview" alt="Uploaded preview" />
-              <p id="verifyResult" style="margin: 10px 0 0; font-size: 0.92rem; opacity: 0.9"></p>
             </div>
 
-            <div class="precheck-msg">
-              <h3 style="margin: 0 0 6px">What happens here?</h3>
-              <ul style="margin: 0 0 0 18px; padding: 0">
-                <li>The system checks that the cameras see a valid scene.</li>
-                <li>If you later add a bogie classifier model, this page will auto-verify.</li>
-                <li>When ready, click <b>Continue</b> to open the dashboard.</li>
-              </ul>
-            </div>
+            <div class="panel-body">
+              <div class="upload-preview">
+                <img id="uploadPreviewImg" src="#" alt="Sample Image" style="display:none;" />
+                <div id="uploadPlaceholder" style="color:#ffeb3b;font-size:26px;font-weight:700;">
+                  Sample Image
+                </div>
+              </div>
 
-            <div class="precheck-actions">
-              <button id="continueBtn" class="btn-primary" disabled>Continue</button>
-              <button id="refreshBtn" class="btn-outline">Refresh</button>
+              <!-- No "Status" label, just classification text -->
+              <div class="class-bar" id="uploadClassText">Upload an image to verify.</div>
+
+              <div class="upload-footer">
+                <button id="refreshBtn" class="btn" type="button">Refresh</button>
+                <button id="continueBtn" class="btn primary" type="button" disabled>Continue</button>
+              </div>
+
+              <div class="hint-row">
+                Note: Upload verification does not auto-continue. Press <b>Continue</b> to proceed.
+              </div>
             </div>
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
 
     <script src="{{ url_for('static', filename='js/precheck.js') }}"></script>
