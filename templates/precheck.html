@@ -5,171 +5,257 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Train Bogie Frame Verification</title>
 
+	<!--
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+	-->
 
     <style>
-      :root { --client-blue: #214390; }
+  :root { --client-blue: #214390; }
 
-      body { background: #f6f8fc; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #f6f8fc;
+    overflow: hidden;
+  }
 
-      .precheck-page {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
+  /* Whole page fills viewport */
+  .precheck-page{
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
 
-      /* Header */
-      .precheck-header {
-        background: var(--client-blue);
-        color: #fff;
-        height: 110px;
-        display: flex;
-        align-items: center;
-        padding: 0 28px;
-        gap: 22px;
-      }
-      .precheck-header .logo-wrap {
-        width: 76px;
-        height: 76px;
-        background: #fff;
-        border-radius: 8px;
-        display: grid;
-        place-items: center;
-        overflow: hidden;
-      }
-      .precheck-header img {
-        width: 76px;
-        height: 76px;
-        object-fit: contain;
-      }
-      .precheck-header h1 {
-        font-size: 44px;
-        font-weight: 700;
-        margin: 0;
-        letter-spacing: 0.5px;
-      }
+  /* Header fixed height */
+  .precheck-header{
+    background: var(--client-blue);
+    color: #fff;
+    height: 110px;
+    flex: 0 0 110px;
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    gap: 22px;
+    box-sizing: border-box;
+  }
 
-      /* Main layout */
-      .precheck-content {
-        flex: 1;
-        padding: 24px 28px 30px;
-      }
-      .precheck-grid {
-        display: grid;
-        grid-template-columns: 1.35fr 1fr;
-        gap: 18px;
-        align-items: start;
-      }
+  /* remove logo background */
+  .precheck-header .logo-wrap{
+    width: 76px;
+    height: 76px;
+    background: transparent;
+    border-radius: 0;
+    overflow: visible;
+    display: grid;
+    place-items: center;
+  }
+  .precheck-header img{
+    width: 76px;
+    height: 76px;
+    object-fit: contain;
+    display: block;
+  }
 
-      /* Panels */
-      .panel {
-        background: #fff;
-        border: 3px solid var(--client-blue);
-        border-radius: 4px;
-        overflow: hidden;
-      }
-      .panel-body {
-        padding: 14px;
-      }
+  .precheck-header h1{
+    margin: 0;
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1;
+  }
 
-      .live-frame {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background: #000;
-        display: grid;
-        place-items: center;
-      }
-      .live-frame img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        display: block;
-      }
+  /* Main area uses remaining height and centers content like dashboard */
+.precheck-content{
+  height: calc(100vh - 110px);   /* subtract header height */
+  padding: 14px 18px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
 
-      .class-bar {
-        background: var(--client-blue);
-        color: #fff;
-        padding: 14px 16px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        font-size: 18px;
-      }
+  /* The “dashboard viewport” shell */
+  .precheck-shell{
+    width: 100%;  
+    max-width: none; 
+    height: 100%;               
+    display: flex;
+  }
 
-      /* Right side upload panel */
-      .upload-head {
-        background: #d9d9d9;
-        padding: 10px 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        border-bottom: 3px solid var(--client-blue);
-      }
-      .upload-head .title {
-        font-weight: 700;
-        font-size: 20px;
-        color: #111;
-      }
-      .upload-head .controls {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
+  /* Two-panel layout fills the shell completely */
+  .precheck-grid{
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 18px;
+    align-items: stretch;
+    min-width: 0;
+    min-height: 0;
+  }
 
-      .btn {
-        border: 2px solid var(--client-blue);
-        background: #fff;
-        color: var(--client-blue);
-        padding: 8px 16px;
-        border-radius: 10px;
-        cursor: pointer;
-        font-weight: 700;
-        font-size: 16px;
-      }
-      .btn.primary {
-        background: var(--client-blue);
-        color: #fff;
-      }
-      .btn:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-      }
+  .precheck-content{
+    width: 100%;
+  }
 
-      .upload-preview {
-        width: 100%;
-        aspect-ratio: 16 / 10;
-        background: #000;
-        display: grid;
-        place-items: center;
-      }
-      .upload-preview img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        display: block;
-      }
+  .precheck-grid{
+    width: 100%;
+  }
 
-      .upload-footer {
-        padding: 14px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
+  /* Panels are flex columns so inner areas don’t affect height */
+  .panel{
+    background: #fff;
+    border: 3px solid var(--client-blue);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
 
-      .hint-row {
-        margin-top: 10px;
-        font-size: 12px;
-        color: #555;
-      }
+  /* LEFT: live frame takes remaining height */
+  .live-frame{
+    flex: 1 1 auto;
+    min-height: 0;
+    background: #000;
+  }
+  .live-frame img{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;      
+    display: block;
+  }
 
-      /* Responsive */
-      @media (max-width: 1050px) {
-        .precheck-header h1 { font-size: 32px; }
-        .precheck-grid { grid-template-columns: 1fr; }
-      }
-    </style>
+  /* Classification bar fixed height */
+  .class-bar{
+    flex: 0 0 auto;
+    background: var(--client-blue);
+    color: #fff;
+    padding: 14px 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 18px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* RIGHT: upload header fixed */
+  .upload-head{
+    flex: 0 0 auto;
+    background: #d9d9d9;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 3px solid var(--client-blue);
+    box-sizing: border-box;
+    min-width: 0;
+  }
+  .upload-head .title{
+    font-weight: 700;
+    font-size: 20px;
+    color: #111;
+    white-space: nowrap;
+  }
+  .upload-head .controls{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  /* Prevent filename from expanding layout */
+  #verifyFile{ width: 240px; max-width: 240px; }
+
+  .btn{
+    border: 2px solid var(--client-blue);
+    background: #fff;
+    color: var(--client-blue);
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .btn.primary{
+    background: var(--client-blue);
+    color: #fff;
+  }
+  .btn:disabled{ opacity: 0.55; cursor: not-allowed; }
+
+  /* RIGHT body becomes a strict vertical layout */
+  .panel-body{
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 14px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .precheck-body{
+    display: block !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  .upload-preview{
+    flex: 1 1 auto;         
+    min-height: 0;           
+    background: #000;
+    position: relative;      
+    overflow: hidden;
+    border-radius: 2px;
+  }
+
+  /* Both placeholder and img are absolute so they never resize layout */
+  #uploadPreviewImg,
+  #uploadPlaceholder{
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  #uploadPreviewImg{
+    object-fit: contain;  
+    display: none;           
+  }
+
+  #uploadPlaceholder{
+    display: grid;
+    place-items: center;
+    color: #ffeb3b;
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  .upload-footer{
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Optional hint row */
+  .hint-row{
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: #555;
+  }
+
+  /* Simple responsive fallback */
+  @media (max-width: 1050px){
+    .precheck-content{ align-items: flex-start; }
+    .precheck-shell{ height: auto; }
+    .precheck-grid{ grid-template-columns: 1fr; }
+  }
+</style>
   </head>
 
-  <body>
+  <body class="precheck-body">
     <div class="precheck-page">
       <!-- Header -->
       <header class="precheck-header">
@@ -181,6 +267,7 @@
 
       <!-- Body -->
       <main class="precheck-content">
+	<div class="precheck-shell">
         <div class="precheck-grid">
           <!-- LEFT: Live camera -->
           <section class="panel">
@@ -224,6 +311,7 @@
             </div>
           </section>
         </div>
+	</div>
       </main>
     </div>
 

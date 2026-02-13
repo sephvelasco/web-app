@@ -17,6 +17,16 @@ function setContinueEnabled() {
   continueBtn.disabled = !(liveVerified || uploadVerified);
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  const liveImg = document.getElementById("liveFeed");
+  if (!liveImg) return;
+
+  liveImg.style.visibility = "hidden";
+  liveImg.addEventListener("load", () => {
+    liveImg.style.visibility = "visible";
+  }, { once: true });
+});
+
 // ---- Live poll (USB camera verification) ----
 // Expecting /bogie_check to return JSON like:
 // { verified: bool, message: str, best: {name, conf} }  (best optional)
@@ -25,7 +35,7 @@ async function pollLive() {
     const res = await fetch("/bogie_check", { cache: "no-store" });
     const data = await res.json();
 
-    liveVerified = !!(data.verified || data.frame_ok);
+	liveVerified = !!data.live_verified;
 
     // Show classification only (no "Status:" label)
     // Prefer best.name/conf if server provides it; fallback to message
@@ -60,7 +70,7 @@ if (verifyFile) {
     if (!f) {
       uploadClassText.textContent = "Upload an image to verify.";
       uploadPreviewImg.style.display = "none";
-      uploadPlaceholder.style.display = "block";
+      uploadPlaceholder.style.display = "grid";
       return;
     }
 
@@ -71,6 +81,7 @@ if (verifyFile) {
     uploadClassText.textContent = "Ready to verify.";
   });
 }
+
 
 // ---- Upload verify ----
 // Expecting /verify_image to return JSON like:
@@ -135,14 +146,23 @@ if (refreshBtn) {
 // Only proceeds when you click Continue (even if upload verification passed)
 if (continueBtn) {
   continueBtn.addEventListener("click", async () => {
-    if (!(liveVerified || uploadVerified)) return;
+  if (!(liveVerified || uploadVerified)) return;
 
-    // If your backend uses /set_verified to set session:
-    try {
-      await fetch("/set_verified", { method: "POST" });
-    } catch (e) {
-      // even if this fails, try to go dashboard (in some setups it still works)
+  try {
+    const res = await fetch("/set_verified", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.ok) {
+      liveVerified = false;
+      uploadVerified = false;
+      setContinueEnabled();
+      liveClassText.textContent = data.message || "Verification required.";
+      return;
     }
+
     window.location.href = "/dashboard";
-  });
+  } catch (e) {
+    liveClassText.textContent = "Server error. Please try again.";
+  }
+});
 }
