@@ -35,7 +35,7 @@ def require_bogie_verification():
 
 @main_bp.route('/')
 def precheck():
-    """Pre-check page that verifies the camera is viewing the underside of a train bogie."""
+    session.pop("bogie_verified", None)
     return render_template('precheck.html')
 
 
@@ -46,28 +46,35 @@ def dashboard():
 
 @main_bp.route('/set_verified', methods=['POST'])
 def set_verified():
-    """Manually mark the bogie underside as verified (fallback if auto-check is not available)."""
+    """Mark bogie as verified ONLY if live or upload verification has passed."""
+    live_ok = bool(getattr(current_app, 'bogie_live_verified', False))
+    upload_ok = bool(getattr(current_app, 'bogie_upload_verified', False))
+
+    if not (live_ok or upload_ok):
+        session.pop('bogie_verified', None)
+        return jsonify({'ok': False, 'message': 'Verification required.'}), 403
+
     session['bogie_verified'] = True
-    return jsonify({'verified': True})
+    return jsonify({'ok': True})
 
 
 @main_bp.route('/bogie_check')
 def bogie_check():
-    """Lightweight pre-check status.
-
-    If you later add a dedicated 'bogie underside' classifier model, you can replace
-    the heuristic inside app.py and return a real confidence score.
-    """
-    # Keep precheck lightweight: app.py maintains bogie status from the USB camera
+    """Return live precheck status from USB + model/heuristics."""
     helper = getattr(current_app, 'update_bogie_status_from_usb', None)
     if callable(helper):
         helper()
 
+    # These should be set by app.py / usb_camera helper
+    live_ok = bool(getattr(current_app, 'bogie_live_verified', False))
+    best = getattr(current_app, 'bogie_best', None)
+
     return jsonify({
-        'auto_supported': bool(getattr(current_app, 'bogie_auto_supported', False)),
-        'frame_ok': bool(getattr(current_app, 'bogie_frame_ok', False)),
-        'verified': bool(session.get('bogie_verified', False)),
-        'message': getattr(current_app, 'bogie_message', 'Initializing...'),
+    'auto_supported': bool(getattr(current_app, 'bogie_auto_supported', False)),
+    'frame_ok': bool(getattr(current_app, 'bogie_frame_ok', False)),
+    'live_verified': bool(getattr(current_app, 'bogie_live_verified', False)),
+    'best': getattr(current_app, 'bogie_best', None),
+    'message': getattr(current_app, 'bogie_message', 'Initializing...'),
     })
 
 
@@ -100,15 +107,16 @@ def verify_image():
             'error': 'Bogie verification model is not installed on this device.',
             'image_url': f"/static/uploads/precheck/{saved_name}",
         }), 501
-
     try:
         ok, best = verifier(filepath)
-        if ok:
-            session['bogie_verified'] = True
+
+        # Store upload verification flag (do NOT set session here)
+        current_app.bogie_upload_verified = bool(ok)
+
         return jsonify({
-            'verified': bool(ok),
+	    'ok': bool(ok),
             'best': best,
-            'image_url': f"/static/uploads/precheck/{saved_name}",
+	    'image_url': f"/static/uploads/precheck/{saved_name}",
         })
     except Exception as e:
         return jsonify({

@@ -57,7 +57,10 @@ app.bogie_frame_ok = False
 app.bogie_message = "Initializing cameras..."
 app.bogie_auto_supported = False  # flips True if bogie verification model is loaded
 
-# Bogie verification model settings (used by /verify_image)
+# Gate state for precheck (live + upload)
+app.bogie_live_verified = False
+app.bogie_upload_verified = False
+app.bogie_best = None
 
 # Precheck verification model (precheck page + upload verification)
 PRECHECK_MODEL_PATH = os.environ.get('PRECHECK_MODEL_PATH', os.path.join(BASE_DIR, 'model', 'precheck.pt'))
@@ -197,10 +200,11 @@ if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
 
 
 def update_bogie_status_from_usb():
-    """Update app.bogie_frame_ok/app.bogie_message using USB camera + precheck model.
+    """Update live bogie verification status using USB camera + precheck model."""
+    # Default to not verified until proven
+    app.bogie_live_verified = False
+    app.bogie_best = None
 
-    This is called from the /bogie_check route to keep precheck lightweight.
-    """
     if usb_cam is None:
         app.bogie_frame_ok = False
         app.bogie_message = "USB verification camera not available."
@@ -212,33 +216,33 @@ def update_bogie_status_from_usb():
         app.bogie_message = "Reading USB verification camera..."
         return
 
-    # Prefer model-based verification when available
-    verifier = getattr(app, 'bogie_verifier', None)
-    if verifier is not None:
-        try:
-            ok, best = verifier(frame)
-            app.bogie_frame_ok = bool(ok)
-            if ok and best:
-                app.bogie_message = f"Bogie verified: {best['name']} ({best['conf']:.2f})"
-            else:
-                app.bogie_message = "Searching for train bogie..."
-            return
-        except Exception as e:
-            app.bogie_frame_ok = False
-            app.bogie_message = f"Precheck model error: {e}"
-            return
-
-    # Fallback heuristic if model not loaded
+    # Optional frame health heuristic (separate from verification)
     try:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         focus_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
         non_black = float(np.mean(gray > 15))
-        frame_ok = (focus_score > 40.0) and (non_black > 0.10)
-        app.bogie_frame_ok = bool(frame_ok)
-        app.bogie_message = "Scene detected. Press Continue." if frame_ok else "Searching for train bogie..."
+        app.bogie_frame_ok = (focus_score > 30.0) and (non_black > 0.05)
     except Exception:
-        app.bogie_frame_ok = False
-        app.bogie_message = "Initializing..."
+        app.bogie_frame_ok = True
+
+    verifier = getattr(app, 'bogie_verifier', None)
+    if verifier is None:
+        app.bogie_message = "Precheck model not loaded."
+        return
+
+    try:
+        ok, best = verifier(frame)
+        app.bogie_live_verified = bool(ok)
+        app.bogie_best = best                 
+
+        if best and best.get("name"):
+            app.bogie_message = f"{best['name']} ({best.get('conf', 0.0):.2f})"
+        else:
+            app.bogie_message = "Verified" if ok else "Searching for train bogie..."
+    except Exception as e:
+        app.bogie_live_verified = False
+        app.bogie_best = None
+        app.bogie_message = f"Precheck model error: {e}"
 
 
 def generate_usb_frames():
