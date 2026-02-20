@@ -3,8 +3,10 @@ from werkzeug.utils import secure_filename
 from models import db
 from services.detector_service import CrackDetector
 from services.usb_camera import USBCamera, discover_usb_video_device
+from services.motor_serial import MotorSerialManager
 from models.detection import Detection
 from routes.main_routes import main_bp
+from routes.motor_routes import motor_bp
 from datetime import datetime
 import io
 import os
@@ -39,6 +41,21 @@ app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
+
+
+# ---------------- Motor Serial (Arduino) ----------------
+# Keep the serial port open for the life of the app so UI can control the TB6600 driver via Arduino.
+motor = MotorSerialManager(port=os.environ.get("ARDUINO_PORT", "/dev/ttyACM0"), baud=115200)
+motor.start()
+app.motor = motor
+
+@atexit.register
+def _close_motor_serial():
+    try:
+        app.motor.close()
+    except Exception:
+        pass
+
 
 # Initialize crack detection model (dashboard)
 CRACK_MODEL_PATH = os.environ.get('CRACK_MODEL_PATH', os.path.join(BASE_DIR, 'model', 'crack.pt'))
@@ -468,6 +485,7 @@ with app.app_context():
     db.create_all()
 
 app.register_blueprint(main_bp)
+app.register_blueprint(motor_bp)
 
 # Expose helper for blueprint routes
 app.update_bogie_status_from_usb = update_bogie_status_from_usb

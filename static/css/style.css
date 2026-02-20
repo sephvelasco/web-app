@@ -13,6 +13,38 @@ body {
 }
 
 /* ================================
+   GENERIC BUTTONS (used by Scan/Calibration)
+================================== */
+button {
+  padding: 8px 14px;
+  background-color: #214390;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.95;
+}
+
+button.secondary {
+  background-color: #2b2b2b;
+}
+
+.btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.btn.secondary {
+  background-color: rgba(33, 67, 144, 0.12);
+  color: #214390;
+  border: 1px solid rgba(33, 67, 144, 0.35);
+}
+
+/* ================================
    SIDEBAR
 ================================== */
 .sidebar {

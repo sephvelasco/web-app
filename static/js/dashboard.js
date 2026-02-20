@@ -1,63 +1,55 @@
+// Dashboard logic: camera/model tabs, live status polling, and scan automation
+
 const cameraTab = document.getElementById("cameraTab");
 const modelTab = document.getElementById("modelTab");
 
 const cameraContainer = document.getElementById("cameraContainer");
 const viewerCanvas = document.getElementById("viewer");
 
-const liveStreamImg = document.getElementById("liveStream");
-const captureBtn = document.getElementById("captureBtn");
-
-// Upload/Image tab removed (live camera feeds are the validation source)
-
 const detectionsList = document.getElementById("detectionsList");
-const statusBox = document.getElementById("status");
+const bogieStatusEl = document.getElementById("bogieStatus");
 const recommendationBox = document.getElementById("recommendation");
 const timestampBox = document.getElementById("timestamp");
 
-// Default to Camera tab on load
+const scanBtn = document.getElementById("scanBtn");
+const scanStopBtn = document.getElementById("scanStopBtn");
+
+// Default to Camera tab
 showOnly("camera");
 
 let livePollingHandle = null;
-const POLL_INTERVAL = 1000;
+const POLL_INTERVAL_MS = 1000;
 
-// --- Tab Handlers ---
-cameraTab.addEventListener("click", () => {
-  setActiveTab(cameraTab);
+// --- Tab handlers ---
+cameraTab?.addEventListener("click", () => {
+  setActiveTopTab(cameraTab);
   showOnly("camera");
   startLivePolling();
-  // Pause 3D rendering if needed
   window.dispatchEvent(new CustomEvent("pause3DRender", { detail: true }));
 });
 
-modelTab.addEventListener("click", () => {
-  setActiveTab(modelTab);
+modelTab?.addEventListener("click", () => {
+  setActiveTopTab(modelTab);
   showOnly("model");
   stopLivePolling();
-  // Resume 3D rendering
   window.dispatchEvent(new CustomEvent("pause3DRender", { detail: false }));
-  // Force resize to ensure canvas fits
-  window.dispatchEvent(new Event("resize"));
+  // Ensure canvas fits
+  setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
 });
 
-// helper: set active tab visual
-function setActiveTab(tabEl) {
-  document
-    .querySelectorAll(".tab-btn")
-    .forEach((el) => el.classList.remove("active"));
-  tabEl.classList.add("active");
+function setActiveTopTab(tabEl) {
+  document.querySelectorAll(".tab-btn").forEach((el) => el.classList.remove("active"));
+  tabEl?.classList.add("active");
 }
 
-// helper: shows only camera/model/image
 function showOnly(which) {
   if (which === "camera") {
     cameraContainer.style.display = "flex";
     viewerCanvas.style.display = "none";
-    liveStreamImg.style.display = "block";
   } else if (which === "model") {
     cameraContainer.style.display = "none";
     viewerCanvas.style.display = "block";
-    // ensure 3D viewer gets resized
-    setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 50);
   }
 }
 
@@ -67,17 +59,21 @@ async function pollLiveStatus() {
     const res = await fetch("/live_status");
     if (!res.ok) return;
     const data = await res.json();
-    // update detections list
-    detectionsList.innerHTML = "";
-    data.detections.forEach((det) => {
-      const li = document.createElement("li");
-      li.textContent = `${det.name} (${(det.confidence * 100).toFixed(1)}%)`;
-      detectionsList.appendChild(li);
-    });
-    // update info boxes
-    statusBox.textContent = data.status || "--";
-    recommendationBox.textContent = data.recommendation || "--";
-    timestampBox.textContent = data.timestamp || "--";
+
+    // detections
+    if (detectionsList) {
+      detectionsList.innerHTML = "";
+      (data.detections || []).forEach((det) => {
+        const li = document.createElement("li");
+        li.textContent = `${det.name} (${(det.confidence * 100).toFixed(1)}%)`;
+        detectionsList.appendChild(li);
+      });
+    }
+
+    // bogie info
+    if (bogieStatusEl) bogieStatusEl.textContent = data.status || "--";
+    if (recommendationBox) recommendationBox.textContent = data.recommendation || "--";
+    if (timestampBox) timestampBox.textContent = data.timestamp || "--";
   } catch (err) {
     console.error("pollLiveStatus error", err);
   }
@@ -85,9 +81,8 @@ async function pollLiveStatus() {
 
 function startLivePolling() {
   if (livePollingHandle) return;
-  // immediate poll + interval
   pollLiveStatus();
-  livePollingHandle = setInterval(pollLiveStatus, POLL_INTERVAL);
+  livePollingHandle = setInterval(pollLiveStatus, POLL_INTERVAL_MS);
 }
 
 function stopLivePolling() {
@@ -96,28 +91,66 @@ function stopLivePolling() {
   livePollingHandle = null;
 }
 
-// start on load (camera tab default)
+// start on load
 startLivePolling();
 
-// --- Capture button ---
-captureBtn.addEventListener("click", async () => {
-  captureBtn.disabled = true;
-  captureBtn.textContent = "Capturing...";
+// --- Scan automation ---
+scanBtn?.addEventListener("click", async () => {
+  if (!scanBtn) return;
+  scanBtn.disabled = true;
+  const oldText = scanBtn.textContent;
+  scanBtn.textContent = "Scanning...";
   try {
-    const res = await fetch("/capture", { method: "POST" });
-    const data = await res.json();
-    if (data.saved) {
-      // Since History is now auto-saved, capture is just an optional manual save.
-      alert("Saved to History.");
-    } else {
-      // Not saved (no defects)
-      alert(data.message || "No defects detected; not saved.");
+    const res = await fetch("/scan/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ distance_mm: 950.0, return_home: true }),
+    });
+    const out = await res.json();
+    if (!out.ok) {
+      alert(out.error || "Failed to start scan");
+      scanBtn.disabled = false;
+      scanBtn.textContent = oldText;
     }
-  } catch (err) {
-    console.error("Capture error", err);
-    alert("Capture failed.");
-  } finally {
-    captureBtn.disabled = false;
-    captureBtn.textContent = "Capture";
+  } catch (e) {
+    alert(String(e));
+    scanBtn.disabled = false;
+    scanBtn.textContent = oldText;
   }
 });
+
+scanStopBtn?.addEventListener("click", async () => {
+  try {
+    await fetch("/scan/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+  } catch (e) {}
+});
+
+async function pollScanStatus() {
+  const scanEl = document.getElementById("scanStatus");
+  if (!scanEl) return;
+  try {
+    const res = await fetch("/scan/status");
+    if (!res.ok) return;
+    const out = await res.json();
+    if (!out.ok) return;
+    const st = out.state || {};
+    const motor = out.motor || {};
+    const pct = st.progress != null ? Math.round(st.progress * 100) : 0;
+    scanEl.textContent =
+      `running=${!!st.running} phase=${st.phase || "idle"} progress=${pct}%\n` +
+      `msg=${st.message || ""}\n` +
+      `x_mm=${(motor.posMm ?? 0).toFixed ? motor.posMm.toFixed(2) : motor.posMm} moving=${!!motor.moving}`;
+
+    if (!st.running && scanBtn) {
+      scanBtn.disabled = false;
+      scanBtn.textContent = "Scan";
+    }
+  } catch (e) {}
+}
+
+setInterval(pollScanStatus, 500);
+pollScanStatus();
