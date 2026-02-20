@@ -23,6 +23,7 @@ Flask-SQLAlchemy
 # Utilities
 tqdm
 requests
+pyserial
 matplotlib
 
 # Raspberry Pi Specific

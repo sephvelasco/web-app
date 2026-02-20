@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calibration</title>
+  <style>
+    :root{--primary:#214390;--bg:#0b1220;--card:#101a30;--text:#e8eefc;--muted:#9fb1d6;}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    header{padding:16px 20px;background:linear-gradient(180deg,rgba(33,67,144,.45),rgba(16,26,48,0));border-bottom:1px solid rgba(255,255,255,.08)}
+    h1{margin:0;font-size:18px;font-weight:700}
+    .wrap{max-width:980px;margin:0 auto;padding:18px}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn{background:var(--primary);border:none;color:white;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    .btn.secondary{background:rgba(255,255,255,.1)}
+    .btn.danger{background:#b4232a}
+    input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:var(--text);padding:10px 12px;border-radius:10px;outline:none}
+    label{font-size:12px;color:var(--muted)}
+    .stat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .kv{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
+    .k{font-size:12px;color:var(--muted)}
+    .v{font-size:16px;font-weight:800;margin-top:2px}
+    pre{white-space:pre-wrap;background:rgba(0,0,0,.35);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.08);max-height:240px;overflow:auto}
+    a{color:#cfe0ff;text-decoration:none}
+    code{background:rgba(255,255,255,.08);padding:2px 6px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Calibration (X-axis)</h1>
+      <div style="color:var(--muted);font-size:13px;margin-top:6px;">This page talks to Arduino over <code>/dev/ttyACM0</code> via Flask. Close Arduino Serial Monitor first.</div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <div class="card">
+        <div class="row">
+          <div>
+            <label>Move (mm)</label><br/>
+            <input id="mm" type="number" step="1" value="10" style="width:120px" />
+          </div>
+          <button class="btn" onclick="moveMm(+1)">Move +</button>
+          <button class="btn" onclick="moveMm(-1)">Move -</button>
+          <button class="btn secondary" onclick="doZero()">Set Zero</button>
+          <button class="btn secondary" onclick="doGet()">GET</button>
+          <button class="btn danger" onclick="doStop()">STOP</button>
+        </div>
+
+        <div class="row" style="margin-top:14px;">
+          <div>
+            <label>Speed (step period µs) — lower = faster</label><br/>
+            <input id="period" type="number" step="10" value="1500" style="width:140px" />
+          </div>
+          <button class="btn secondary" onclick="applySpeedFromUi()">Apply Speed</button>
+        </div>
+
+        <div class="stat">
+          <div class="kv"><div class="k">Connected</div><div class="v" id="connected">—</div></div>
+          <div class="kv"><div class="k">Moving</div><div class="v" id="moving">—</div></div>
+          <div class="kv"><div class="k">Position (steps)</div><div class="v" id="posSteps">—</div></div>
+          <div class="kv"><div class="k">Position (mm)</div><div class="v" id="posMm">—</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="k" style="margin-bottom:6px;">Last serial line</div>
+        <pre id="log">(waiting...)</pre>
+        <div class="k" style="margin-top:10px;">Tip: keep this page open while you wire motors. It auto-refreshes status 5×/sec.</div>
+        <div class="k" style="margin-top:10px;"><a href="/dashboard">Back to Dashboard</a></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/motor.js') }}"></script>
+</body>
+</html>

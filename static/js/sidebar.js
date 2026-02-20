@@ -4,10 +4,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const dashboardTab = document.getElementById("dashboardTab");
   const historyTab = document.getElementById("historyTab");
+  const motorTab = document.getElementById("motorTab");
   const liveFeedTab = document.getElementById("liveFeedTab"); // optional if present
 
   const dashboardView = document.getElementById("dashboardView");
   const historyView = document.getElementById("historyView");
+  const motorView = document.getElementById("motorView");
   const liveFeedView = document.getElementById("liveFeedView");
 
   function setActiveTab(tabEl) {
@@ -19,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (dashboardView) dashboardView.style.display = "none";
     if (historyView) historyView.style.display = "none";
     if (liveFeedView) liveFeedView.style.display = "none";
+    if (motorView) motorView.style.display = "none";
     if (viewEl) viewEl.style.display = "block";
   }
 
@@ -63,6 +66,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Optional support if you add a live feed nav tab later
+
+  if (motorTab) {
+    motorTab.addEventListener("click", () => {
+      setActiveTab(motorTab);
+      showOnly(motorView);
+    });
+  }
+
   if (liveFeedTab) {
     liveFeedTab.addEventListener("click", () => {
       setActiveTab(liveFeedTab);

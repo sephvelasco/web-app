@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, current_app, session, redirect, url_for
 from werkzeug.utils import secure_filename
 import os
+import threading
+import time
 from models import db
 from models.detection import Detection
 from datetime import datetime
@@ -197,3 +199,135 @@ def history():
         })
 
     return jsonify(list(grouped.values()))
+
+# -------------------- Scan automation (X-axis only for now) --------------------
+
+def _ensure_scan_state(app):
+    if not hasattr(app, "scan_state") or not isinstance(getattr(app, "scan_state"), dict):
+        app.scan_state = {
+            "running": False,
+            "phase": "idle",
+            "distance_mm": 0.0,
+            "progress": 0.0,
+            "message": "",
+            "started_ts": 0.0,
+            "ended_ts": 0.0,
+            "stop_requested": False,
+        }
+    return app.scan_state
+
+def _scan_worker(app, distance_mm: float, return_home: bool):
+    st = _ensure_scan_state(app)
+    st["running"] = True
+    st["phase"] = "forward"
+    st["distance_mm"] = float(distance_mm)
+    st["progress"] = 0.0
+    st["message"] = "Moving forward..."
+    st["started_ts"] = time.time()
+    st["ended_ts"] = 0.0
+    st["stop_requested"] = False
+
+    motor = getattr(app, "motor", None)
+    if motor is None:
+        st["message"] = "Motor serial not initialized."
+        st["running"] = False
+        st["phase"] = "error"
+        st["ended_ts"] = time.time()
+        return
+
+    # Command forward move
+    try:
+        motor.send(f"MOVEMM mm={distance_mm}")
+    except Exception as e:
+        st["message"] = f"Failed to send motor command: {e}"
+        st["running"] = False
+        st["phase"] = "error"
+        st["ended_ts"] = time.time()
+        return
+    # Wait until motor finishes or stop requested
+    t0 = time.time()
+    while True:
+        if st.get("stop_requested"):
+            st["message"] = "Stop requested."
+            break
+        ms = motor.get_state()
+        # update progress from posMm if available
+        try:
+            pos = float(ms.get("posMm", 0.0) or 0.0)
+            if distance_mm != 0:
+                st["progress"] = max(0.0, min(1.0, pos / float(distance_mm)))
+        except Exception:
+            pass
+
+        if not ms.get("moving", False):
+            # If we never got moving=true, allow a tiny grace period after sending command
+            if time.time() - t0 > 0.5:
+                break
+        time.sleep(0.1)
+
+    # Return home (optional)
+    if return_home and not st.get("stop_requested"):
+        st["phase"] = "return"
+        st["message"] = "Returning to start..."
+        motor.send(f"MOVEMM mm={-float(distance_mm)}")
+        t1 = time.time()
+        while True:
+            if st.get("stop_requested"):
+                st["message"] = "Stop requested."
+                break
+            ms = motor.get_state()
+            if not ms.get("moving", False):
+                if time.time() - t1 > 0.5:
+                    break
+            time.sleep(0.1)
+
+    st["running"] = False
+    st["phase"] = "stopped" if st.get("stop_requested") else "done"
+    st["message"] = "Stopped." if st.get("stop_requested") else "Scan complete."
+    st["progress"] = 1.0 if st["phase"] == "done" else st.get("progress", 0.0)
+    st["ended_ts"] = time.time()
+
+
+@main_bp.route("/scan/start", methods=["POST"])
+def scan_start():
+    # IMPORTANT: current_app is a LocalProxy. We must grab the real Flask app
+    # object before starting a background thread, otherwise the worker thread
+    # can crash with "working outside of application context".
+    app = current_app._get_current_object()
+    st = _ensure_scan_state(app)
+
+    if st.get("running"):
+        return jsonify({"ok": False, "error": "Scan already running", "state": st}), 409
+
+    data = request.get_json(silent=True) or {}
+    distance_mm = float(data.get("distance_mm", 950.0))
+    return_home = bool(data.get("return_home", True))
+
+    t = threading.Thread(target=_scan_worker, args=(app, distance_mm, return_home), daemon=True)
+    app.scan_thread = t
+    t.start()
+
+    return jsonify({"ok": True, "state": st})
+
+
+@main_bp.route("/scan/stop", methods=["POST"])
+def scan_stop():
+    app = current_app._get_current_object()
+    st = _ensure_scan_state(app)
+    st["stop_requested"] = True
+    motor = getattr(app, "motor", None)
+    try:
+        if motor:
+            motor.send("s")
+    except Exception:
+        pass
+    return jsonify({"ok": True, "state": st})
+
+
+@main_bp.route("/scan/status", methods=["GET"])
+def scan_status():
+    st = _ensure_scan_state(current_app)
+    # include motor status snapshot too
+    motor = getattr(current_app, "motor", None)
+    motor_state = motor.get_state() if motor else {}
+    return jsonify({"ok": True, "state": st, "motor": motor_state})

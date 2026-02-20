@@ -37,6 +37,7 @@
             Dashboard
           </li>
           <li class="nav-tab" id="historyTab" data-view="history">History</li>
+          <li class="nav-tab" id="motorTab" data-view="motor">Calibration</li>
         </ul>
       </nav>
     </div>
@@ -76,8 +77,8 @@
               "
             />
             <div style="margin-top: 8px">
-              <button id="captureBtn">Capture</button>
-              <!-- TO BE REPLACED -->
+              <button id="scanBtn">Scan</button>
+              <button id="scanStopBtn" class="secondary" style="margin-left:8px">Stop</button>
             </div>
           </div>
           <canvas id="viewer" style="display: none"></canvas>
@@ -87,7 +88,7 @@
           <div class="info-box">
             <h3>Bogie Information</h3>
             <p><b>ID:</b> <span id="bogieId">--</span></p>
-            <p><b>Status:</b> <span id="status">--</span></p>
+            <p><b>Status:</b> <span id="bogieStatus">--</span></p>
             <p><b>Time:</b> <span id="timestamp">--</span></p>
           </div>
 
@@ -104,6 +105,78 @@
       </div>
 
       <div id="historyView" style="display: none"></div>
+
+      <div id="motorView" style="display: none">
+        <!-- Calibration view (integrated like History) -->
+        <div style="padding: 16px; max-width: 980px; margin: 0 auto;">
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap: 12px; flex-wrap:wrap;">
+            <div>
+              <h2 style="margin:0;">Calibration (X-axis)</h2>
+              <div style="margin-top:6px; color:#5b677a; font-size:13px;">
+                Tip: close Arduino Serial Monitor before using calibration.
+              </div>
+            </div>
+            <div style="font-size:13px;">
+              <a href="/dashboard/motor" style="color:#214390; text-decoration:none;">Open full calibration page →</a>
+            </div>
+          </div>
+
+          <div style="margin-top:14px; display:grid; grid-template-columns: 1.1fr .9fr; gap:14px;">
+            <div class="info-box" style="margin:0;">
+              <h3 style="margin-top:0;">Move</h3>
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <div>
+                  <div style="font-size:12px; color:#6a768a;">Move (mm)</div>
+                  <input id="cal_mm" type="number" step="1" value="10" style="width:120px; padding:10px; border-radius:10px; border:1px solid #d5dbe6;">
+                </div>
+                <button class="btn" onclick="moveMm(+parseFloat(document.getElementById('cal_mm').value||'0'))">Move +</button>
+                <button class="btn" onclick="moveMm(-parseFloat(document.getElementById('cal_mm').value||'0'))">Move -</button>
+                <button class="btn secondary" onclick="doZero()">Set Zero</button>
+                <button class="btn secondary" onclick="doGet()">GET</button>
+                <button class="btn secondary" onclick="doStop()">STOP</button>
+              </div>
+
+              <details style="margin-top:12px;">
+                <summary style="cursor:pointer;"><b>Speed (optional)</b> — lower = faster</summary>
+                <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                  <input id="cal_period" type="number" step="10" value="1500" style="width:140px; padding:10px; border-radius:10px; border:1px solid #d5dbe6;">
+                  <button class="btn secondary" onclick="setSpeed(parseInt(document.getElementById('cal_period').value||'1500',10))">Apply</button>
+                </div>
+              </details>
+
+              <div style="margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div style="background:#f7f9fd; border:1px solid #e3e8f3; border-radius:12px; padding:10px;">
+                  <div style="font-size:12px; color:#6a768a;">Connected</div>
+                  <div id="cal_connected" style="font-size:16px; font-weight:800;">—</div>
+                </div>
+                <div style="background:#f7f9fd; border:1px solid #e3e8f3; border-radius:12px; padding:10px;">
+                  <div style="font-size:12px; color:#6a768a;">Moving</div>
+                  <div id="cal_moving" style="font-size:16px; font-weight:800;">—</div>
+                </div>
+                <div style="background:#f7f9fd; border:1px solid #e3e8f3; border-radius:12px; padding:10px;">
+                  <div style="font-size:12px; color:#6a768a;">Position (steps)</div>
+                  <div id="cal_posSteps" style="font-size:16px; font-weight:800;">—</div>
+                </div>
+                <div style="background:#f7f9fd; border:1px solid #e3e8f3; border-radius:12px; padding:10px;">
+                  <div style="font-size:12px; color:#6a768a;">Position (mm)</div>
+                  <div id="cal_posMm" style="font-size:16px; font-weight:800;">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-box" style="margin:0;">
+              <h3 style="margin-top:0;">Status</h3>
+              <div style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre-wrap; background: rgba(0,0,0,.06); padding:10px; border-radius:12px; border:1px solid rgba(0,0,0,.08); max-height: 240px; overflow:auto;" id="cal_log">(waiting...)</div>
+              <div id="cal_error" style="margin-top:8px; color:#b00020;"></div>
+              <div style="margin-top:14px;">
+                <h3 style="margin:0 0 8px 0;">Scan Status</h3>
+                <div id="scanStatus" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre-wrap;">Idle</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
 
       <div id="liveFeedView" style="display: none; text-align: center">
         <h2>Live Camera Feed</h2>
@@ -161,9 +234,8 @@
       type="module"
       src="{{ url_for('static', filename='js/history.js') }}"
     ></script>
-    <script
-      type="module"
-      src="{{ url_for('static', filename='js/livefeed.js') }}"
+    <script src="{{ url_for('static', filename='js/motor.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/livefeed.js') }}"
     ></script>
   </body>
 </html>
