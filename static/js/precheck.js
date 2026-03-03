@@ -12,6 +12,7 @@ const verifyBtn = document.getElementById("verifyBtn");
 
 const uploadPreviewImg = document.getElementById("uploadPreviewImg");
 const uploadPlaceholder = document.getElementById("uploadPlaceholder");
+const bogieIdInput = document.getElementById("bogieIdInput");
 
 function setContinueEnabled() {
   continueBtn.disabled = !(liveVerified || uploadVerified);
@@ -26,6 +27,19 @@ document.addEventListener("DOMContentLoaded", () => {
     liveImg.style.visibility = "visible";
   }, { once: true });
 });
+
+// Suggest a bogie ID (optional)
+async function loadSuggestedBogieId() {
+  if (!bogieIdInput) return;
+  try {
+    const res = await fetch('/bogie/suggest_id', { cache: 'no-store' });
+    const data = await res.json();
+    if (data && data.suggested && !bogieIdInput.value) {
+      bogieIdInput.placeholder = `${data.suggested} (leave blank to auto)`;
+    }
+  } catch (e) {}
+}
+loadSuggestedBogieId();
 
 // ---- Live poll (USB camera verification) ----
 // Expecting /bogie_check to return JSON like:
@@ -148,8 +162,14 @@ if (continueBtn) {
   continueBtn.addEventListener("click", async () => {
   if (!(liveVerified || uploadVerified)) return;
 
+  const bogie_id = (bogieIdInput && bogieIdInput.value ? bogieIdInput.value : '').trim();
+
   try {
-    const res = await fetch("/set_verified", { method: "POST" });
+    const res = await fetch("/set_verified", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bogie_id }),
+    });
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok || !data.ok) {

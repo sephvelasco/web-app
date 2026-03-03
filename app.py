@@ -378,19 +378,84 @@ def generate_frames():
             crack_sig = tuple(sorted([d.get('name', '') for d in detections_list]))
             if (now - last_auto_save_ts) >= AUTO_SAVE_COOLDOWN_SEC and crack_sig != last_auto_save_sig:
                 try:
-                    fname = f"autosave_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
+                    bogie_id = getattr(app, 'current_bogie_id', None)
+                    prefix = str(bogie_id).strip() if bogie_id else 'autosave'
+                    # Filename includes bogie id for easier browsing
+                    fname = f"{prefix}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
                     out_path = os.path.join(app.config['UPLOAD_FOLDER'], fname)
                     with open(out_path, 'wb') as f:
                         f.write(buffer.tobytes())
 
+                    # --- Mapping snapshot (Phase 1) ---
+                    seg = getattr(app, 'current_segment', None)
+                    try:
+                        seg = int(seg) if seg is not None else None
+                    except Exception:
+                        seg = None
+                    seg_offset = getattr(app, 'current_segment_offset_mm', 0.0)
+                    try:
+                        seg_offset = float(seg_offset or 0.0)
+                    except Exception:
+                        seg_offset = 0.0
+
+                    # Motor position (mm) from Arduino state
+                    x_local_mm = None
+                    x_global_mm = None
+                    try:
+                        ms = app.motor.get_state() if getattr(app, 'motor', None) else {}
+                        if ms and ms.get('posMm') is not None:
+                            x_local_mm = float(ms.get('posMm'))
+                            x_global_mm = x_local_mm + seg_offset
+                    except Exception:
+                        pass
+
+                    # Simple mm-per-pixel (tunable via env)
+                    try:
+                        mm_per_px = float(os.environ.get('MAP_MM_PER_PX', '0.5'))
+                    except Exception:
+                        mm_per_px = 0.5
+                    try:
+                        side_sep = float(os.environ.get('MAP_SIDE_SEP_MM', '250'))
+                    except Exception:
+                        side_sep = 250.0
+
                     with app.app_context():
                         for det in detections_list:
+                            bbox = det.get('bbox') or [0, 0, 0, 0]
+                            try:
+                                x1, y1, x2, y2 = bbox
+                                cx = int((int(x1) + int(x2)) / 2)
+                                cy = int((int(y1) + int(y2)) / 2)
+                            except Exception:
+                                cx, cy = 0, 0
+
+                            # Determine which CSI camera the bbox belongs to (combined frame)
+                            cam_id = 0 if cx < FRAME_WIDTH else 1
+                            local_cx = cx if cam_id == 0 else max(0, cx - FRAME_WIDTH)
+
+                            # Y mapping: center at image mid, multiply by mm/px, then separate L/R
+                            try:
+                                cx0 = FRAME_WIDTH / 2.0
+                                y_mm = (float(local_cx) - cx0) * mm_per_px
+                            except Exception:
+                                y_mm = 0.0
+                            y_mm = float(y_mm)
+                            y_mm = y_mm + (-side_sep if cam_id == 0 else side_sep)
+
                             new_det = Detection(
                                 image_filename=fname,
                                 crack_type=det.get('name', 'unknown'),
                                 confidence=det.get('confidence', 0.0),
                                 recommendation=app.latest_recommendation,
                                 status=app.latest_status,
+                                bogie_id=bogie_id,
+                                segment=seg,
+                                x_local_mm=x_local_mm,
+                                gantry_x=x_global_mm,
+                                gantry_y=y_mm,
+                                camera_id=cam_id,
+                                bbox_cx=cx,
+                                bbox_cy=cy,
                             )
                             db.session.add(new_det)
                         db.session.commit()
@@ -482,6 +547,43 @@ def cleanup():
             print(f"Error releasing USB camera: {e}")
 
 with app.app_context():
+    # --- Lightweight SQLite migration (adds new columns if missing) ---
+    # We avoid Alembic here to keep the project simple on Raspberry Pi.
+    try:
+        from sqlalchemy import text
+
+        def _sqlite_cols(table_name: str):
+            rows = db.session.execute(text(f"PRAGMA table_info({table_name});")).fetchall()
+            return {r[1] for r in rows}  # name is column 2
+
+        existing = _sqlite_cols('detections')
+        # If table doesn't exist yet, create_all below will handle it.
+        if existing:
+            add_cols = []
+            if 'bogie_id' not in existing:
+                add_cols.append("ALTER TABLE detections ADD COLUMN bogie_id VARCHAR(64);")
+            if 'segment' not in existing:
+                add_cols.append("ALTER TABLE detections ADD COLUMN segment INTEGER;")
+            if 'x_local_mm' not in existing:
+                add_cols.append("ALTER TABLE detections ADD COLUMN x_local_mm FLOAT;")
+            if 'camera_id' not in existing:
+                add_cols.append("ALTER TABLE detections ADD COLUMN camera_id INTEGER;")
+            if 'bbox_cx' not in existing:
+                add_cols.append("ALTER TABLE detections ADD COLUMN bbox_cx INTEGER;")
+            if 'bbox_cy' not in existing:
+                add_cols.append("ALTER TABLE detections ADD COLUMN bbox_cy INTEGER;")
+
+            for stmt in add_cols:
+                try:
+                    db.session.execute(text(stmt))
+                except Exception:
+                    pass
+            if add_cols:
+                db.session.commit()
+    except Exception:
+        # Best-effort only
+        pass
+
     db.create_all()
 
 app.register_blueprint(main_bp)

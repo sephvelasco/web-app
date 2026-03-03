@@ -10,9 +10,18 @@ const detectionsList = document.getElementById("detectionsList");
 const bogieStatusEl = document.getElementById("bogieStatus");
 const recommendationBox = document.getElementById("recommendation");
 const timestampBox = document.getElementById("timestamp");
+const bogieIdEl = document.getElementById("bogieId");
+const currentSegmentEl = document.getElementById("currentSegment");
+const resetBtn = document.getElementById("resetBtn");
 
 const scanBtn = document.getElementById("scanBtn");
 const scanStopBtn = document.getElementById("scanStopBtn");
+
+// Segment modal elements
+const segmentModal = document.getElementById('segmentModal');
+const segmentModalClose = document.getElementById('segmentModalClose');
+const segmentCancelBtn = document.getElementById('segmentCancelBtn');
+const segmentStartBtn = document.getElementById('segmentStartBtn');
 
 // Default to Camera tab
 showOnly("camera");
@@ -94,24 +103,75 @@ function stopLivePolling() {
 // start on load
 startLivePolling();
 
+let __bogieId = null;
+let __lastSegment = null;
+
+async function loadCurrentBogieId() {
+  try {
+    const res = await fetch('/bogie/current', { cache: 'no-store' });
+    const out = await res.json();
+    if (out && out.bogie_id) {
+      __bogieId = out.bogie_id;
+      if (bogieIdEl) bogieIdEl.textContent = out.bogie_id;
+    }
+  } catch (e) {}
+}
+loadCurrentBogieId();
+
+// Reset flow (start a new bogie)
+resetBtn?.addEventListener('click', async () => {
+  if (!confirm('Start a new bogie? This will return to verification (history stays).')) return;
+  try {
+    await fetch('/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  } catch (e) {}
+  window.location.href = '/';
+});
+
 // --- Scan automation ---
+function openSegmentModal() {
+  if (!segmentModal) return;
+  segmentModal.style.display = 'flex';
+}
+function closeSegmentModal() {
+  if (!segmentModal) return;
+  segmentModal.style.display = 'none';
+}
+segmentModalClose?.addEventListener('click', closeSegmentModal);
+segmentCancelBtn?.addEventListener('click', closeSegmentModal);
+segmentModal?.addEventListener('click', (e) => {
+  if (e.target === segmentModal) closeSegmentModal();
+});
+
 scanBtn?.addEventListener("click", async () => {
+  // Ask which segment is ready
+  openSegmentModal();
+});
+
+segmentStartBtn?.addEventListener('click', async () => {
+  closeSegmentModal();
   if (!scanBtn) return;
   scanBtn.disabled = true;
   const oldText = scanBtn.textContent;
-  scanBtn.textContent = "Scanning...";
+  scanBtn.textContent = 'Scanning...';
+
+  const segInput = document.querySelector('input[name="segmentChoice"]:checked');
+  const segment = segInput ? Number(segInput.value) : 1;
+
   try {
-    const res = await fetch("/scan/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ distance_mm: 950.0, return_home: true }),
+    const res = await fetch('/scan/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ distance_mm: 950.0, return_home: true, segment }),
     });
     const out = await res.json();
     if (!out.ok) {
-      alert(out.error || "Failed to start scan");
+      alert(out.error || 'Failed to start scan');
       scanBtn.disabled = false;
       scanBtn.textContent = oldText;
+      return;
     }
+    __lastSegment = segment;
+    if (currentSegmentEl) currentSegmentEl.textContent = `Segment ${segment}`;
   } catch (e) {
     alert(String(e));
     scanBtn.disabled = false;
@@ -145,9 +205,18 @@ async function pollScanStatus() {
       `msg=${st.message || ""}\n` +
       `x_mm=${(motor.posMm ?? 0).toFixed ? motor.posMm.toFixed(2) : motor.posMm} moving=${!!motor.moving}`;
 
+    if (currentSegmentEl && st.segment) {
+      currentSegmentEl.textContent = `Segment ${st.segment}`;
+    }
+
     if (!st.running && scanBtn) {
       scanBtn.disabled = false;
       scanBtn.textContent = "Scan";
+
+      // When scan completes, notify the 3D viewer to refresh markers
+      if (st.phase === 'done' && __bogieId) {
+        window.dispatchEvent(new CustomEvent('mappingUpdated', { detail: { bogie_id: __bogieId } }));
+      }
     }
   } catch (e) {}
 }

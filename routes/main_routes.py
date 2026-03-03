@@ -29,15 +29,23 @@ def require_bogie_verification():
     if request.path in open_paths:
         return None
 
-    # Protect dashboard and any future private routes
-    if request.path.startswith('/dashboard') and not session.get('bogie_verified'):
-        return redirect(url_for('main.precheck'))
+    # Protect dashboard and private APIs
+    if not session.get('bogie_verified'):
+        protected_prefixes = (
+            '/dashboard',
+            '/scan',
+            '/mapping',
+            '/bogie',
+        )
+        if request.path.startswith(protected_prefixes):
+            return redirect(url_for('main.precheck'))
     return None
 
 
 @main_bp.route('/')
 def precheck():
     session.pop("bogie_verified", None)
+    session.pop("bogie_id", None)
     return render_template('precheck.html')
 
 
@@ -56,7 +64,93 @@ def set_verified():
         session.pop('bogie_verified', None)
         return jsonify({'ok': False, 'message': 'Verification required.'}), 403
 
+    # Accept optional bogie_id from UI (or auto-generate)
+    data = request.get_json(silent=True) or {}
+    bogie_id = (data.get('bogie_id') or '').strip()
+
+    def _suggest_next_bogie_id() -> str:
+        # Find the highest numeric suffix from existing bogie_ids.
+        # Format: BOGIE-0001
+        try:
+            ids = [r[0] for r in db.session.query(Detection.bogie_id).distinct().all()]
+        except Exception:
+            ids = []
+        best = 0
+        for v in ids:
+            if not v:
+                continue
+            s = str(v)
+            if s.upper().startswith('BOGIE-'):
+                tail = s.split('-', 1)[1]
+                try:
+                    n = int(tail)
+                    best = max(best, n)
+                except Exception:
+                    continue
+        return f"BOGIE-{best+1:04d}"
+
+    if not bogie_id:
+        bogie_id = _suggest_next_bogie_id()
+
     session['bogie_verified'] = True
+    session['bogie_id'] = bogie_id
+
+    # Also store on the Flask app for background threads (no session access there)
+    try:
+        current_app.current_bogie_id = bogie_id
+    except Exception:
+        pass
+
+    return jsonify({'ok': True, 'bogie_id': bogie_id})
+
+
+@main_bp.route('/bogie/suggest_id')
+def bogie_suggest_id():
+    """Suggest the next bogie ID (does not modify session)."""
+    try:
+        ids = [r[0] for r in db.session.query(Detection.bogie_id).distinct().all()]
+    except Exception:
+        ids = []
+    best = 0
+    for v in ids:
+        if not v:
+            continue
+        s = str(v)
+        if s.upper().startswith('BOGIE-'):
+            tail = s.split('-', 1)[1]
+            try:
+                n = int(tail)
+                best = max(best, n)
+            except Exception:
+                continue
+    return jsonify({'ok': True, 'suggested': f"BOGIE-{best+1:04d}"})
+
+
+@main_bp.route('/bogie/current')
+def bogie_current():
+    return jsonify({'ok': True, 'bogie_id': session.get('bogie_id')})
+
+
+@main_bp.route('/reset', methods=['POST'])
+def reset_flow():
+    """Reset the web flow back to bogie verification (history is retained)."""
+    session.pop('bogie_verified', None)
+    session.pop('bogie_id', None)
+    # Best-effort reset scan state
+    try:
+        app = current_app._get_current_object()
+        if hasattr(app, 'scan_state') and isinstance(app.scan_state, dict):
+            app.scan_state.update({
+                'running': False,
+                'phase': 'idle',
+                'progress': 0.0,
+                'message': 'Reset.',
+                'stop_requested': False,
+                'segment': None,
+                'segment_offset_mm': 0.0,
+            })
+    except Exception:
+        pass
     return jsonify({'ok': True})
 
 
@@ -213,6 +307,8 @@ def _ensure_scan_state(app):
             "started_ts": 0.0,
             "ended_ts": 0.0,
             "stop_requested": False,
+            "segment": None,
+            "segment_offset_mm": 0.0,
         }
     return app.scan_state
 
@@ -226,6 +322,16 @@ def _scan_worker(app, distance_mm: float, return_home: bool):
     st["started_ts"] = time.time()
     st["ended_ts"] = 0.0
     st["stop_requested"] = False
+
+    # Store current segment metadata on app (background threads don't have session)
+    try:
+        app.current_segment = int(st.get('segment')) if st.get('segment') is not None else None
+    except Exception:
+        app.current_segment = None
+    try:
+        app.current_segment_offset_mm = float(st.get('segment_offset_mm', 0.0) or 0.0)
+    except Exception:
+        app.current_segment_offset_mm = 0.0
 
     motor = getattr(app, "motor", None)
     if motor is None:
@@ -267,6 +373,19 @@ def _scan_worker(app, distance_mm: float, return_home: bool):
 
     # Return home (optional)
     if return_home and not st.get("stop_requested"):
+        # Pause a bit before returning (operator preference)
+        try:
+            pause_s = float(os.environ.get('SCAN_RETURN_PAUSE_SEC', '3'))
+        except Exception:
+            pause_s = 3.0
+        if pause_s > 0:
+            st["message"] = f"Pausing {pause_s:.0f}s before return..."
+            t_pause = time.time()
+            while (time.time() - t_pause) < pause_s:
+                if st.get('stop_requested'):
+                    break
+                time.sleep(0.1)
+
         st["phase"] = "return"
         st["message"] = "Returning to start..."
         motor.send(f"MOVEMM mm={-float(distance_mm)}")
@@ -303,6 +422,25 @@ def scan_start():
     distance_mm = float(data.get("distance_mm", 950.0))
     return_home = bool(data.get("return_home", True))
 
+    # Segment selection (for 2-pass scan stitching)
+    seg = data.get('segment', 1)
+    try:
+        seg = int(seg)
+    except Exception:
+        seg = 1
+    if seg not in (1, 2):
+        seg = 1
+    st['segment'] = seg
+    st['segment_offset_mm'] = 0.0 if seg == 1 else float(distance_mm)
+    session['current_segment'] = seg
+
+    # Store on app for background usage
+    try:
+        app.current_segment = seg
+        app.current_segment_offset_mm = float(st['segment_offset_mm'])
+    except Exception:
+        pass
+
     t = threading.Thread(target=_scan_worker, args=(app, distance_mm, return_home), daemon=True)
     app.scan_thread = t
     t.start()
@@ -331,3 +469,48 @@ def scan_status():
     motor = getattr(current_app, "motor", None)
     motor_state = motor.get_state() if motor else {}
     return jsonify({"ok": True, "state": st, "motor": motor_state})
+
+
+@main_bp.route('/mapping/points', methods=['GET'])
+def mapping_points():
+    """Return mapping points grouped by saved image for the current bogie.
+
+    Each item corresponds to one saved image (marker in 3D viewer).
+    """
+    bogie_id = request.args.get('bogie_id') or session.get('bogie_id')
+    if not bogie_id:
+        return jsonify({'ok': True, 'bogie_id': None, 'points': []})
+
+    # Query newest first
+    rows = (
+        Detection.query
+        .filter(Detection.bogie_id == bogie_id)
+        .order_by(Detection.timestamp.desc())
+        .all()
+    )
+
+    grouped = {}
+    for det in rows:
+        key = det.image_filename
+        if key not in grouped:
+            grouped[key] = {
+                'filename': key,
+                'image_url': f'/static/uploads/{key}',
+                'timestamp': det.timestamp.strftime('%Y-%m-%d %H:%M:%S') if det.timestamp else '',
+                'status': det.status or '',
+                'recommendation': det.recommendation or '',
+                'bogie_id': det.bogie_id,
+                'segment': det.segment,
+                'x_mm': float(det.gantry_x) if det.gantry_x is not None else None,
+                'y_mm': float(det.gantry_y) if det.gantry_y is not None else None,
+                'camera_id': det.camera_id,
+                'detections': [],
+            }
+
+        grouped[key]['detections'].append({
+            'crack_type': det.crack_type,
+            'confidence': round(float(det.confidence) * 100, 1),
+        })
+
+    pts = list(grouped.values())
+    return jsonify({'ok': True, 'bogie_id': bogie_id, 'points': pts})
