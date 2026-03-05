@@ -102,8 +102,8 @@ loader.load(
 
     // Side-view camera
     const maxDim = Math.max(size3.x, size3.y, size3.z);
-    const dist = maxDim * 1.8;
-    camera.position.set(0, maxDim * 0.25, dist);
+    const dist = maxDim * 0.75;
+    camera.position.set(0, maxDim * 0.30, dist);
     camera.lookAt(0, 0, 0);
     controls.target.set(0, 0, 0);
     controls.update();
@@ -119,6 +119,9 @@ loader.load(
 // -------------------- Mapping markers --------------------
 const markerGroup = new THREE.Group();
 scene.add(markerGroup);
+
+const X_ZERO_OFFSET_MM = 250;
+const MARKER_DROP_Y_MM = -175;
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -141,17 +144,44 @@ function markerColorForPoint(pt) {
   return 0xf59e0b; // amber
 }
 
+function toNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function addMarker(pt) {
-  if (pt.x_mm == null || pt.y_mm == null) return;
+  // Accept multiple possible field names depending on backend
+  const scanMm =
+    toNum(pt.x_mm) ??
+    toNum(pt.gantry_x) ??
+    toNum(pt.x_local_mm) ??
+    toNum(pt.x) ??
+    0;
 
-  // Map: x_mm is 0..1900 -> world X is roughly [-halfLen..+halfLen]
-  const x = Number(pt.x_mm) - bogieHalfLength;
-  const z = Number(pt.y_mm); // left/right across width (depth in side view)
+  const latMm =
+    toNum(pt.y_mm) ??
+    toNum(pt.gantry_y) ??
+    toNum(pt.y) ??
+    0;
 
-  const geom = new THREE.SphereGeometry(10, 16, 16); // 10mm radius
-  const mat = new THREE.MeshStandardMaterial({ color: markerColorForPoint(pt), roughness: 0.35, metalness: 0.05 });
+  // If bogieHalfLength isn't ready yet (model not loaded), skip safely
+  if (typeof bogieHalfLength !== "number" || !Number.isFinite(bogieHalfLength)) return;
+
+  // Shift 0mm inward, then center on model origin
+  const x = (scanMm + X_ZERO_OFFSET_MM) - bogieHalfLength;
+
+  // Keep your current orientation assumption: lateral maps to Z
+  const z = latMm;
+
+  const geom = new THREE.SphereGeometry(10, 16, 16);
+  const mat = new THREE.MeshStandardMaterial({
+    color: markerColorForPoint(pt),
+    roughness: 0.35,
+    metalness: 0.05,
+  });
+
   const m = new THREE.Mesh(geom, mat);
-  m.position.set(x, 0, z);
+  m.position.set(x, MARKER_DROP_Y_MM, z);
   markerGroup.add(m);
   __markerPayloadByUuid.set(m.uuid, pt);
 }
