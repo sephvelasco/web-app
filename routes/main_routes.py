@@ -233,6 +233,10 @@ def upload_image():
 
     detections = current_app.detector.predict(filepath)
 
+    # Filter out low-confidence detections (never save/show them)
+    conf_min = float(current_app.config.get("CONF_MIN", 0.5))
+    detections = [d for d in detections if float(d.get("confidence", 0.0) or 0.0) >= conf_min]
+
     crack_types = [det.get('name', 'unknown').lower() for det in detections]
     status = "Normal"
     recommendation = "No significant defects detected."

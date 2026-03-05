@@ -42,6 +42,8 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 
+CONF_MIN = float(os.environ.get("CONF_MIN", "0.5"))
+app.config["CONF_MIN"] = CONF_MIN
 
 # ---------------- Motor Serial (Arduino) ----------------
 # Keep the serial port open for the life of the app so UI can control the TB6600 driver via Arduino.
@@ -249,6 +251,12 @@ def update_bogie_status_from_usb():
 
     try:
         ok, best = verifier(frame)
+
+        # Hide low-confidence detections on LIVE precheck display (but keep upload verification unchanged)
+        if best is not None and float(best.get("conf", 0.0)) < app.config["CONF_MIN"]:
+            best = None
+            ok = False
+
         app.bogie_live_verified = bool(ok)
         app.bogie_best = best                 
 
@@ -318,18 +326,31 @@ def generate_frames():
                     confs = boxes.conf.numpy() if hasattr(boxes.conf, 'numpy') else boxes.conf
                     clss = boxes.cls.numpy() if hasattr(boxes.cls, 'numpy') else boxes.cls
                     for i, (bb, conf, cls) in enumerate(zip(xyxy, confs, clss)):
+                        conf_f = float(conf)
+
+                        # --- CONFIDENCE FILTER: do not display / do not record below threshold ---
+                        if conf_f < app.config["CONF_MIN"]:
+                            continue
+
                         x1, y1, x2, y2 = map(int, bb[:4])
                         class_id = int(cls)
                         name = res.names[class_id] if hasattr(res, 'names') else str(class_id)
+
+                        # Optional: ignore 'normal' class if the model includes it
+                        if str(name).lower() == "normal":
+                            continue
+
                         detections_list.append({
                             'name': name,
-                            'confidence': float(conf),
+                            'confidence': conf_f,
                             'bbox': [x1, y1, x2, y2]
                         })
-                        # Draw box on frame
+
+                        # Draw ONLY for kept detections
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 200, 0), 2)
-                        cv2.putText(frame, f"{name} {conf:.2f}", (x1, max(y1-6,0)),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                        cv2.putText(frame, f"{name} {conf_f:.2f}", (x1, max(y1 - 6, 0)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
                 else:
                     detections_list = []
             except Exception as e:
