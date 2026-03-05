@@ -42,6 +42,39 @@
       </nav>
     </div>
 
+    <!-- Segment selection modal (2-pass scan) -->
+    <div id="segmentModal" style="display:none; position:fixed; inset:0; background: rgba(0,0,0,.45); z-index:9999; align-items:center; justify-content:center;">
+      <div style="width:min(520px, 92vw); background:#fff; border-radius:16px; padding:18px 18px 16px; border:2px solid #214390; box-shadow: 0 18px 60px rgba(0,0,0,.25);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <h3 style="margin:0; color:#214390;">Select segment to scan</h3>
+          <button id="segmentModalClose" class="secondary" style="padding:6px 10px;">✕</button>
+        </div>
+        <div style="margin-top:10px; color:#334155; font-size:14px; line-height:1.4;">
+          Your platform travel is 950mm, so each bogie needs 2 scans.
+        </div>
+        <div style="margin-top:14px; display:grid; gap:10px;">
+          <label style="display:flex; gap:10px; align-items:center; padding:12px; border:1px solid #d5dbe6; border-radius:12px; cursor:pointer;">
+            <input type="radio" name="segmentChoice" value="1" checked />
+            <div>
+              <div style="font-weight:800;">Segment 1</div>
+              <div style="font-size:13px; color:#64748b;">0 – 950mm (front half)</div>
+            </div>
+          </label>
+          <label style="display:flex; gap:10px; align-items:center; padding:12px; border:1px solid #d5dbe6; border-radius:12px; cursor:pointer;">
+            <input type="radio" name="segmentChoice" value="2" />
+            <div>
+              <div style="font-weight:800;">Segment 2</div>
+              <div style="font-size:13px; color:#64748b;">950 – 1900mm (back half)</div>
+            </div>
+          </label>
+        </div>
+        <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:10px;">
+          <button id="segmentCancelBtn" class="secondary">Cancel</button>
+          <button id="segmentStartBtn" style="background:#214390; color:#fff; border:none; padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer;">Start Scan</button>
+        </div>
+      </div>
+    </div>
+
     <div class="main-content" id="mainContent">
       <div id="dashboardView">
         <div class="top-tabs">
@@ -88,8 +121,12 @@
           <div class="info-box">
             <h3>Bogie Information</h3>
             <p><b>ID:</b> <span id="bogieId">--</span></p>
+            <p><b>Segment:</b> <span id="currentSegment">--</span></p>
             <p><b>Status:</b> <span id="bogieStatus">--</span></p>
             <p><b>Time:</b> <span id="timestamp">--</span></p>
+            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button id="resetBtn" class="secondary">New Bogie</button>
+            </div>
           </div>
 
           <div class="info-box scrollable">

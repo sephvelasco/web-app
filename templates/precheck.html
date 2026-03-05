@@ -300,6 +300,13 @@
               <!-- No "Status" label, just classification text -->
               <div class="class-bar" id="uploadClassText">Upload an image to verify.</div>
 
+              <!-- Bogie ID input (stored in history + mapping) -->
+              <div style="display:flex; gap:10px; align-items:center;">
+                <label for="bogieIdInput" style="font-weight:700; color:#111; white-space:nowrap;">Bogie ID</label>
+                <input id="bogieIdInput" type="text" placeholder="BOGIE-0001 (leave blank to auto)"
+                       style="flex:1; padding:10px 12px; border:2px solid #214390; border-radius:10px; font-weight:700;" />
+              </div>
+
               <div class="upload-footer">
                 <button id="refreshBtn" class="btn" type="button">Refresh</button>
                 <button id="continueBtn" class="btn primary" type="button" disabled>Continue</button>
